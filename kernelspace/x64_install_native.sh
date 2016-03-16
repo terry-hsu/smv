@@ -42,5 +42,5 @@ cd ..
 NETLINK_DIR=./netlink-module/
 echo "===================== [x64-kernel] Compile netlink module for ribbons. ============================"
 cd $NETLINK_DIR
-make CFLAGS=-DCONFIG_RIBBON
+make
 cd ..
