@@ -432,7 +432,7 @@ int doc_exmpl_echo(struct sk_buff *skb_2,  struct genl_info *info)
 			printk(KERN_DEBUG "[ribbon_netlink.c] kernel received: %s\n", mydata);
     }
 	else
-		printk("no info->attrs %i\n", DOC_EXMPL_A_MSG);
+		printk(KERN_CRIT "no info->attrs %i\n", DOC_EXMPL_A_MSG);
     
     /* Parse the received message here */
     result = parse_message(mydata);
@@ -478,12 +478,13 @@ out:
     return 0;
 }
 /* commands: mapping between the command enumeration and the actual function*/
-struct genl_ops doc_exmpl_gnl_ops_echo = {
-	.cmd = DOC_EXMPL_C_ECHO,
-	.flags = 0,
-	.policy = doc_exmpl_genl_policy,
-	.doit = doc_exmpl_echo,
-	.dumpit = NULL,
+static const struct genl_ops doc_exmpl_gnl_ops_echo[] = {
+    {
+    	.cmd = DOC_EXMPL_C_ECHO,
+  	    .flags = 0,
+    	.policy = doc_exmpl_genl_policy,
+	    .doit = doc_exmpl_echo,
+    },
 };
 
 static int __init kernel_comm_init(void)
@@ -492,40 +493,24 @@ static int __init kernel_comm_init(void)
     printk(KERN_INFO "[Ribbon] KERNEL COMMUNICATION MODULE READY\n");
 
     /*register new family*/
-	rc = genl_register_family(&doc_exmpl_gnl_family);
-	if (rc != 0)
-		goto failure;
-    /*register functions (commands) of the new family*/
-    /*
-	rc = genl_register_ops(&doc_exmpl_gnl_family, &doc_exmpl_gnl_ops_echo);
+    rc = genl_register_family_with_ops(&doc_exmpl_gnl_family, doc_exmpl_gnl_ops_echo);
 	if (rc != 0){
         printk("register ops: %i\n",rc);
         genl_unregister_family(&doc_exmpl_gnl_family);
 		goto failure;
-    }
-    */
-    
+    }    
 	return 0;
 	
 failure:
-    printk(KERN_DEBUG "[Ribbon] an error occured while inserting the netlink module\n");
-	return -1;
-	
-	
+    printk(KERN_CRIT "[Ribbon] an error occured while inserting the netlink module\n");
+	return -1;	
 }
 
 static void __exit kernel_comm_exit(void)
 {
     int ret;
     printk(KERN_INFO "[Ribbon] KERNEL COMMUNICATION MODULE EXIT\n");
-    /*unregister the functions*/
-/*
-	ret = genl_unregister_ops(&doc_exmpl_gnl_family, &doc_exmpl_gnl_ops_echo);
-	if(ret != 0){
-        printk("unregister ops: %i\n",ret);
-        return;
-    }
-    */
+
     /*unregister the family*/
 	ret = genl_unregister_family(&doc_exmpl_gnl_family);
 	if(ret !=0){
