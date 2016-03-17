@@ -25,6 +25,7 @@
 */
 
 #include <linux/kernel.h>
+#include <linux/mutex.h>
 
 /* Permission */
 #define MEMDOM_MEMBER           0x00000010
@@ -33,16 +34,23 @@
 #define MEMDOM_WRITE            0x00000002
 #define MEMDOM_EXECUTE          0x00000001
 
+#define MAX_MEMDOM (INT_MAX - 1);
+/* Memory domain struct metadata */
+struct memdom_struct {
+    int memdom_id;
+    struct list_head memdom_list;
+    struct mutex memdom_mutex;
+};
+
+/* Called by init/main.c */
+extern void memdom_init(void);
+
 /* SLAB cache for memdom_struct structure */
 extern struct kmem_cache *memdom_cachep;
 #define allocate_memdom()   (kmem_cache_alloc(memdom_cachep, GFP_KERNEL))
 #define free_memdom(memdom) (kmem_cache_free(memdom_cachep, memdom))
 
-/* SLAB cache for memdom_privs_struct structure */
-extern struct kmem_cache *memdom_privs_cachep;
-#define allocate_memdom_privs()   (kmem_cache_alloc(memdom_privs_cachep, GFP_KERNEL))
-#define free_memdom_privs(memdom_privs)       (kmem_cache_free(memdom_privs_cachep, memdom_privs))
-
+/* Memoey domain functions */
 int memdom_create(void);
 unsigned long memdom_alloc(int memdom_id, unsigned long sz);
 unsigned long memdom_free(unsigned long addr);

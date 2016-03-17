@@ -1,6 +1,21 @@
 #include <linux/ribbon.h>
 #include <linux/memdom.h>
 #include <linux/module.h>
+#include <linux/slab.h>
+
+/* SLAB cache for ribbon_struct structure  */
+struct kmem_cache *memdom_cachep;
+
+/** void memdom_init(void)
+ *  Create slab cache for future memdom_struct allocation This
+ *  is called by start_kernel in main.c 
+ */
+void memdom_init(void){
+    memdom_cachep = kmem_cache_create("memdom_struct",
+                                      sizeof(struct memdom_struct), 0,
+                                      SLAB_HWCACHE_ALIGN | SLAB_PANIC | SLAB_NOTRACK, NULL);
+    printk(KERN_INFO "[%s] memdom slabs initialized\n", __func__);   
+}
 
 int memdom_create(void){
 

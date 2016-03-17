@@ -88,6 +88,9 @@
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
 
+#include <linux/ribbon.h>
+#include <linux/memdom.h>
+
 static int kernel_init(void *);
 
 extern void init_IRQ(void);
@@ -557,6 +560,10 @@ asmlinkage __visible void __init start_kernel(void)
 	sort_main_extable();
 	trap_init();
 	mm_init();
+
+    /* Initialize ribbons and memory domains for the secure memory views model */
+	ribbon_init();
+    memdom_init();
 
 	/*
 	 * Set up the scheduler prior starting any interrupts (such as the

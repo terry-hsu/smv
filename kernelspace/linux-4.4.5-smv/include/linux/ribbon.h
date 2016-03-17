@@ -25,6 +25,24 @@
 */
 
 #include <linux/kernel.h>
+#include <linux/mutex.h>
+#include <linux/types.h>
+
+#define MAX_RIBBON (INT_MAX - 1);
+extern atomic_t ribbon_conut;
+
+/* Ribbons struct metadata */
+struct ribbon_struct {
+    int ribbon_id;
+    int ntasks;       // number of tasks running in this ribbon
+    struct list_head ribbon_list;      // list of ribbons
+    struct mutex ribbon_mutex;  // lock ribbon struct to prevent race condition
+};
+
+
+
+/* Called by init/main.c */
+extern void ribbon_init(void);
 
 /* SLAB cache for ribbon_struct structure */
 extern struct kmem_cache *ribbon_cachep;
