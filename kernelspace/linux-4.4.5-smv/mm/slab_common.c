@@ -74,6 +74,7 @@ static int kmem_cache_sanity_check(const char *name, size_t size)
 	if (!name || in_interrupt() || size < sizeof(void *) ||
 		size > KMALLOC_MAX_SIZE) {
 		pr_err("kmem_cache_create(%s) integrity check failed\n", name);
+   		printk(KERN_ERR "kmem_cache_create(%s) integrity check failed, size: %zu\n", name, size);
 		return -EINVAL;
 	}
 
@@ -396,6 +397,7 @@ kmem_cache_create(const char *name, size_t size, size_t align,
 
 	err = kmem_cache_sanity_check(name, size);
 	if (err) {
+		printk(KERN_ERR "Error: kmem_cache_sanity_check returned %d\n", err);
 		goto out_unlock;
 	}
 
@@ -414,6 +416,7 @@ kmem_cache_create(const char *name, size_t size, size_t align,
 	cache_name = kstrdup_const(name, GFP_KERNEL);
 	if (!cache_name) {
 		err = -ENOMEM;
+		printk(KERN_ERR "[%s] Error: out of memory, err %d\n", __func__, err);
 		goto out_unlock;
 	}
 
@@ -423,6 +426,7 @@ kmem_cache_create(const char *name, size_t size, size_t align,
 	if (IS_ERR(s)) {
 		err = PTR_ERR(s);
 		kfree_const(cache_name);
+		printk(KERN_ERR "Error: create_cache failed, err %d\n", err);
 	}
 
 out_unlock:
