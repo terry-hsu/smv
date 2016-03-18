@@ -14,6 +14,8 @@
 #include <linux/page-flags-layout.h>
 #include <asm/page.h>
 #include <asm/mmu.h>
+#include <linux/ribbon.h>
+#include <linux/memdom.h>
 
 #ifndef AT_VECTOR_SIZE_ARCH
 #define AT_VECTOR_SIZE_ARCH 0
@@ -390,6 +392,12 @@ struct mm_rss_stat {
 
 struct kioctx_table;
 struct mm_struct {
+	/* Additional fields to support the secure memory view model */
+    atomic_t num_ribbons;	/* number of ribbons the current process has */
+	atomic_t num_memdoms;	/* number of memdoms the current process has */
+	struct ribbon_struct *ribbon_metadata;	/* Bookkeeping of per-process ribbons info */
+	struct memdom_struct *memdom_metadata;	/* Bookkeeping of per-process memory domains info */
+
 	struct vm_area_struct *mmap;		/* list of VMAs */
 	struct rb_root mm_rb;
 	u32 vmacache_seqnum;                   /* per-thread vmacache */
