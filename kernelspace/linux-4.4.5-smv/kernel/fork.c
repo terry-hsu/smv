@@ -88,6 +88,9 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/task.h>
 
+#include <linux/ribbon.h>
+#include <linux/memdom.h>
+
 /*
  * Minimum number of threads to boot the kernel
  */
@@ -587,6 +590,10 @@ static void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
 
 static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
 {
+    atomic_set(&mm->num_ribbons, 0);
+	atomic_set(&mm->num_memdoms, 0);
+	mm->ribbon_metadata = create_ribbon_metadata();
+	mm->memdom_metadata = create_memdom_metadata();
 	mm->mmap = NULL;
 	mm->mm_rb = RB_ROOT;
 	mm->vmacache_seqnum = 0;
@@ -685,6 +692,8 @@ void __mmdrop(struct mm_struct *mm)
 	destroy_context(mm);
 	mmu_notifier_mm_destroy(mm);
 	check_mm(mm);
+	free_ribbon_metadata(mm->ribbon_metadata);
+	free_memdom_metadata(mm->memdom_metadata);
 	free_mm(mm);
 }
 EXPORT_SYMBOL_GPL(__mmdrop);
