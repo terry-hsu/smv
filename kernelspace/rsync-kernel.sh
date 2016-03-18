@@ -7,7 +7,7 @@ if [ $# -eq 0 ]; then
 fi
 
 echo "=========== Copying modified kernel files from local to $1 ========="
-rsync -auv --rsh='ssh ' --exclude-from rsync_exclude  $KERNEL_DIR terry@$1:/home/terry/workspace/smv/kernelspace/
+rsync -auv --rsh='ssh ' --no-times --exclude-from rsync_exclude  $KERNEL_DIR terry@$1:/home/terry/workspace/smv/kernelspace/
 ret=$?
 if [ $ret -eq 0 ]; then
     echo "====================== Copied successfully ========================"

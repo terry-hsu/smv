@@ -5,3 +5,4 @@ FETCH_HEAD
 HEAD
 ORIG_HEAD
 index
+*.o
