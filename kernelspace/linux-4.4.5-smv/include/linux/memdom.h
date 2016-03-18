@@ -34,21 +34,27 @@
 #define MEMDOM_WRITE            0x00000002
 #define MEMDOM_EXECUTE          0x00000001
 
-#define MAX_MEMDOM (INT_MAX - 1);
 /* Memory domain struct metadata */
 struct memdom_struct {
     int memdom_id;
     struct list_head memdom_list;
     struct mutex memdom_mutex;
+    DECLARE_BITMAP(ribbon_bitmapRead, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can read this memdom, 0 otherwise.
+    DECLARE_BITMAP(ribbon_bitmapWrite, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can write this memdom, 0 otherwise.
+    DECLARE_BITMAP(ribbon_bitmapExecute, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can execute data in this memdom, 0 otherwise.
+    DECLARE_BITMAP(ribbon_bitmapAllocate, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can allocate data in this memdom, 0 otherwise.
+    DECLARE_BITMAP(memdom_bitmapInUse, MAX_MEMDOM); // Bitmap of memdoms in use.  set to 1 if memdom[i] is in use, 0 otherwise.
 };
 
 /* Called by init/main.c */
 extern void memdom_init(void);
 
 /* SLAB cache for memdom_struct structure */
-extern struct kmem_cache *memdom_cachep;
 #define allocate_memdom()   (kmem_cache_alloc(memdom_cachep, GFP_KERNEL))
 #define free_memdom(memdom) (kmem_cache_free(memdom_cachep, memdom))
+
+struct memdom_struct *create_memdom_metadata(void);
+void free_memdom_metadata(struct memdom_struct *memdom);
 
 /* Memoey domain functions */
 int memdom_create(void);

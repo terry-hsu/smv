@@ -28,26 +28,29 @@
 #include <linux/mutex.h>
 #include <linux/types.h>
 
-#define MAX_RIBBON (INT_MAX - 1);
-extern atomic_t ribbon_conut;
+#define MAX_RIBBON 1024
+#define MAX_MEMDOM 1024
 
 /* Ribbons struct metadata */
 struct ribbon_struct {
     int ribbon_id;
-    int ntasks;       // number of tasks running in this ribbon
+    atomic_t ntask;       // number of tasks running in this ribbon
     struct list_head ribbon_list;      // list of ribbons
     struct mutex ribbon_mutex;  // lock ribbon struct to prevent race condition
+    DECLARE_BITMAP(memdom_bitmap, MAX_MEMDOM); // Bitmap of memdoms.  set to 1 if this ribbon is in memdom[i], 0 otherwise.
+    DECLARE_BITMAP(ribbon_bitmapInUse, MAX_RIBBON); // Bitmap of ribbons in use.  set to 1 if ribbon[i] is in use, 0 otherwise.
 };
-
-
 
 /* Called by init/main.c */
 extern void ribbon_init(void);
 
 /* SLAB cache for ribbon_struct structure */
-extern struct kmem_cache *ribbon_cachep;
 #define allocate_ribbon()         (kmem_cache_alloc(ribbon_cachep, GFP_KERNEL))
 #define free_ribbon(ribbon)       (kmem_cache_free(ribbon_cachep, ribbon))
+
+/* Used by mm_struct */
+struct ribbon_struct *create_ribbon_metadata(void);
+void free_ribbon_metadata(struct ribbon_struct *ribbon);
 
 int ribbon_create(void);
 int ribbon_kill(int ribbon_id);
@@ -55,5 +58,4 @@ int ribbon_join_memdom(int memdom_id, int ribbon_id);
 int ribbon_leave_memdom(int memdom_id, int ribbon_id);
 int ribbon_is_in_memdom(int memdom_id, int ribbon_id);
 int ribbon_get_ribbon_id(void);
-
 #endif
