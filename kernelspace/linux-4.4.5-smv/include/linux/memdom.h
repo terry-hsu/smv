@@ -36,14 +36,12 @@
 
 /* Memory domain struct metadata */
 struct memdom_struct {
-    int memdom_id;
-    struct list_head memdom_list;
+    int memdom_id;    
     struct mutex memdom_mutex;
     DECLARE_BITMAP(ribbon_bitmapRead, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can read this memdom, 0 otherwise.
     DECLARE_BITMAP(ribbon_bitmapWrite, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can write this memdom, 0 otherwise.
     DECLARE_BITMAP(ribbon_bitmapExecute, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can execute data in this memdom, 0 otherwise.
     DECLARE_BITMAP(ribbon_bitmapAllocate, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can allocate data in this memdom, 0 otherwise.
-    DECLARE_BITMAP(memdom_bitmapInUse, MAX_MEMDOM); // Bitmap of memdoms in use.  set to 1 if memdom[i] is in use, 0 otherwise.
 };
 
 /* Called by init/main.c */
@@ -58,9 +56,10 @@ void free_memdom_metadata(struct memdom_struct *memdom);
 
 /* Memoey domain functions */
 int memdom_create(void);
-unsigned long memdom_alloc(int memdom_id, unsigned long sz);
 unsigned long memdom_free(unsigned long addr);
-int memdom_kill(int memdom_id);
+void free_all_memdoms(struct mm_struct *mm);
+int memdom_kill(int memdom_id, struct mm_struct *mm);
+unsigned long memdom_alloc(int memdom_id, unsigned long sz);
 int memdom_priv_add(int memdom_id, int ribbon_id, unsigned long privs);
 int memdom_priv_del(int memdom_id, int ribbon_id, unsigned long privs);
 int memdom_priv_get(int memdom_id, int ribbon_id);
