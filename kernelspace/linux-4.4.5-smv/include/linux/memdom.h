@@ -28,11 +28,10 @@
 #include <linux/mutex.h>
 
 /* Permission */
-#define MEMDOM_MEMBER           0x00000010
-#define MEMDOM_INJECT           0x00000008
-#define MEMDOM_READ             0x00000004
+#define MEMDOM_READ             0x00000001
 #define MEMDOM_WRITE            0x00000002
-#define MEMDOM_EXECUTE          0x00000001
+#define MEMDOM_EXECUTE          0x00000004
+#define MEMDOM_ALLOCATE         0x00000008
 
 /* Memory domain struct metadata */
 struct memdom_struct {
@@ -53,13 +52,13 @@ extern void memdom_init(void);
 
 /* Memoey domain functions */
 int memdom_create(void);
-unsigned long memdom_free(unsigned long addr);
 void free_all_memdoms(struct mm_struct *mm);
 int memdom_kill(int memdom_id, struct mm_struct *mm);
-unsigned long memdom_alloc(int memdom_id, unsigned long sz);
-int memdom_priv_add(int memdom_id, int ribbon_id, unsigned long privs);
-int memdom_priv_del(int memdom_id, int ribbon_id, unsigned long privs);
+int memdom_priv_add(int memdom_id, int ribbon_id, int privs);
+int memdom_priv_del(int memdom_id, int ribbon_id, int privs);
 int memdom_priv_get(int memdom_id, int ribbon_id);
+unsigned long memdom_alloc(int memdom_id, unsigned long sz);
+unsigned long memdom_free(unsigned long addr);
 
 #endif
 
