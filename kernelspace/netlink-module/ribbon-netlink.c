@@ -50,17 +50,13 @@ int memdom_internal_function_dispatcher(int memdom_op, long memdom_id1,
                                          long memdom_priv_op, long memdom_priv_value){
     int rc = 0;
     unsigned long memdom_data_addr = 0;
-    if(memdom_op == 0){
-        
+    if(memdom_op == 0){        
         printk( "[%s] memdom_create()\n", __func__);
-        rc = memdom_create();
-        
+        rc = memdom_create();        
     }
-    else if(memdom_op == 1){
-        
-        printk( "[%s] memdom_remove(%ld)\n", __func__, memdom_id1);
-        rc = memdom_kill(memdom_id1);
-        
+    else if(memdom_op == 1){        
+        printk( "[%s] memdom_kill(%ld)\n", __func__, memdom_id1);
+        rc = memdom_kill(memdom_id1, NULL);        
     }
     else if(memdom_op == 2){
         
@@ -111,7 +107,7 @@ int memdom_internal_function_dispatcher(int memdom_op, long memdom_id1,
     return rc;
 }
 
-int ribbon_internal_function__dispatcher(int ribbon_op, long ribbon_id, int ribbon_domain_op,
+int ribbon_internal_function_dispatcher(int ribbon_op, long ribbon_id, int ribbon_domain_op,
                                           long memdom_id1, long memdom_id2){
     
     int rc = 0;
@@ -121,6 +117,7 @@ int ribbon_internal_function__dispatcher(int ribbon_op, long ribbon_id, int ribb
         rc = ribbon_create();
     }else if(ribbon_op == 1){
         printk( "[%s] ribbon_kill(%ld)\n", __func__, ribbon_id);
+        rc = ribbon_kill(ribbon_id, NULL);
     }else if(ribbon_op == 2){
         printk( "[%s] ribbon_run(%ld)\n", __func__, ribbon_id);
     }else if(ribbon_op == 3){
@@ -129,11 +126,10 @@ int ribbon_internal_function__dispatcher(int ribbon_op, long ribbon_id, int ribb
             rc = ribbon_join_memdom(memdom_id1, ribbon_id);
         }else if(ribbon_domain_op == 1){
             printk( "[%s] ribbon_leave_domain(%ld, %ld)\n", __func__, ribbon_id, memdom_id1);
+            rc = ribbon_leave_memdom(memdom_id1, ribbon_id, NULL);
         }else if(ribbon_domain_op == 2){
             printk("[%s] ribbon_isin_domain(%ld, %ld)\n", __func__, ribbon_id, memdom_id1);
             rc = ribbon_is_in_memdom(ribbon_id, memdom_id1);
-        }else if(ribbon_domain_op == 3){
-            printk("[%s] ribbon_switch_domain(%ld, %ld, %ld)\n", __func__, ribbon_id, memdom_id1, memdom_id2);
         }
     }
 
@@ -390,7 +386,7 @@ int parse_message(char* message){
         } 
         else {
             /* Other ribbon operations */
-            return ribbon_internal_function__dispatcher(ribbon_op, ribbon_id, ribbon_domain_op, 
+            return ribbon_internal_function_dispatcher(ribbon_op, ribbon_id, ribbon_domain_op, 
                                                  memdom_id1, memdom_id2);
         }
 
@@ -428,8 +424,6 @@ int doc_exmpl_echo(struct sk_buff *skb_2,  struct genl_info *info)
 		mydata = (char *)nla_data(na);
 		if (mydata == NULL)
 			printk(KERN_ERR "[ribbon_netlink.c] error while receiving data\n");
-		else
-			printk(KERN_DEBUG "[ribbon_netlink.c] kernel received: %s\n", mydata);
     }
 	else
 		printk(KERN_CRIT "no info->attrs %i\n", DOC_EXMPL_A_MSG);
