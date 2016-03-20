@@ -69,9 +69,9 @@ out:
 EXPORT_SYMBOL(ribbon_create);
 
 int ribbon_kill(int ribbon_id, struct mm_struct *mm){
-    struct ribbon_struct *ribbon = mm->ribbon_metadata[ribbon_id];
+    struct ribbon_struct *ribbon; 
     int memdom_id = 0;
-    
+
     if( ribbon_id >= MAX_RIBBON ) {
         printk(KERN_ERR "[%s] Error, out of bound: ribbon %d\n", __func__, ribbon_id);
         return -1;
@@ -79,12 +79,13 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     
     /* When user space program calls ribbon_kill, mm_struct is NULL
      * If free_all_ribbons calls this function, it passes the about-to-destroy mm_struct, not current->mm */
-    if( mm == NULL ) {
+    if( !mm ) {
         mm = current->mm;
     }
 
     /* SMP: protect shared ribbon bitmap */
     mutex_lock(&mm->ribbon_bitmapMutex);
+    ribbon = mm->ribbon_metadata[ribbon_id]; 
 
     /* TODO: check if current task has the permission to delete the ribbon, only master thread can do this */
     
@@ -97,15 +98,15 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
         return -1;
     }
 
-    /* Clear all ribbon_bitmap(Read/Write/Execute/Allocate) bits for this ribbon in all memdoms */
+    /* Clear all ribbon_bitmap(Read/Write/Execute/Allocate) bits for this ribbon in all memdoms */  
     memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, MAX_MEMDOM);
     while( memdom_id != MAX_MEMDOM ) {
         ribbon_leave_memdom(memdom_id, ribbon_id, mm); 
         memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, MAX_MEMDOM);
     }
-
+    
     /* Free the actual ribbon struct */
-    free_ribbon(mm->ribbon_metadata[ribbon_id]);
+    free_ribbon(ribbon);
     mm->ribbon_metadata[ribbon_id] = NULL;
 
     /* Decrement ribbon count */
@@ -152,6 +153,7 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
         printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
         return -1;
     }
+    printk(KERN_ERR "[%s] memdom %p, ribbon %p\n", __func__, memdom, ribbon);
 
     /* Clear ribbon_id-th bit in the bitmap for memdom */
     clear_bit(ribbon_id, memdom->ribbon_bitmapRead);
