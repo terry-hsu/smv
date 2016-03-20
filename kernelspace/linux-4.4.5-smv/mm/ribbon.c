@@ -179,24 +179,19 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
 }
 EXPORT_SYMBOL(ribbon_leave_memdom);
 
-/* Check if the ribbon has any privileges in the memdom, 1 if yes, 0 otherwise */
+/* Check if the ribbon has joined the memdom, 1 if yes, 0 otherwise */
 int ribbon_is_in_memdom(int memdom_id, int ribbon_id){
-    struct memdom_struct *memdom = mm->memdom_metadata[memdom_id];
-    int in = 0;
-    if( !memdom ) {
-        printk(KERN_ERR "[%s] Error, memdom is NULL\n", __func__);
-        return -1;
+    struct ribbon_struct *ribbon = current->mm->ribbon_metadata[ribbon_id];
+    int in = 0;    
+    if( !ribbon ) {
+        printk(KERN_ERR "[%s] ribbon %p not found\n", __func__, ribbon);
+        return 0;        
     }
-
-    /* Check permission */
-    mutex_lock(&memdom->memdom_mutex);
-    if( test_bit(ribbon_id, memdom->ribbon_bitmapRead) ||
-        test_bit(ribbon_id, memdom->ribbon_bitmapWrite) ||
-        test_bit(ribbon_id, memdom->ribbon_bitmapExecute) ||
-        test_bit(ribbon_id, memdom->ribbon_bitmapAllocate) ) {
+    mutex_lock(&ribbon->ribbon_mutex);
+    if( test_bit(memdom_id, ribbon->memdom_bitmapJoin) ) {
         in = 1;
     }
-    mutex_unlock(&memdom->memdom_mutex);
+    mutex_unlock(&ribbon->ribbon_mutex);
     return in;
 }
 EXPORT_SYMBOL(ribbon_is_in_memdom);
