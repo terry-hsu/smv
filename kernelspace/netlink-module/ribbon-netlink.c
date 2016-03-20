@@ -58,8 +58,7 @@ int memdom_internal_function_dispatcher(int memdom_op, long memdom_id1,
         printk( "[%s] memdom_kill(%ld)\n", __func__, memdom_id1);
         rc = memdom_kill(memdom_id1, NULL);        
     }
-    else if(memdom_op == 2){
-        
+    else if(memdom_op == 2){        
         printk(KERN_CRIT "[%s] memdom_alloc(%ld, 0x%lx, %ld)\n", __func__, memdom_id1, malloc_start, memdom_reqsize);
         rc = memdom_alloc(memdom_id1, memdom_reqsize);
     }
@@ -70,38 +69,21 @@ int memdom_internal_function_dispatcher(int memdom_op, long memdom_id1,
             printk("[%s] Error: convert memdom_data address to unsigned long failed, returned %d\n", __func__, rc);
         }
         printk("[%s] memdom_free(%ld, 0x%08lx)\n", __func__, memdom_id1, memdom_data_addr); 
-        rc = memdom_free(memdom_data_addr);
-        
+        rc = memdom_free(memdom_data_addr);        
     }
-    else if(memdom_op == 4){
-      
-        if(memdom_priv_op == 0){
-            
+    else if(memdom_op == 4){      
+        if(memdom_priv_op == 0){            
             printk(KERN_CRIT "[%s] memdom_priv_get(%ld, %ld)\n", __func__, memdom_id1, ribbon_id);
-            rc = memdom_priv_get(memdom_id1, ribbon_id);
-            
-        }
-        
-        else if(memdom_priv_op == 1){
-            
+            rc = memdom_priv_get(memdom_id1, ribbon_id);            
+        }        
+        else if(memdom_priv_op == 1){            
             printk(KERN_CRIT "[%s] memdom_priv_add(%ld, %ld, %ld)\n", __func__, memdom_id1, ribbon_id, memdom_priv_value);
-            rc = memdom_priv_add(memdom_id1, ribbon_id, memdom_priv_value);
-            
-        }
-        
-        else if(memdom_priv_op == 2){
-            
+            rc = memdom_priv_add(memdom_id1, ribbon_id, memdom_priv_value);            
+        }        
+        else if(memdom_priv_op == 2){            
             printk(KERN_CRIT "[%s] memdom_priv_del(%ld, %ld, %ld)\n", __func__, memdom_id1, ribbon_id, memdom_priv_value);
-            rc = memdom_priv_del(memdom_id1, ribbon_id, memdom_priv_value);
-            
-        }
-        
-        else if(memdom_priv_op == 3){
-            
-            printk(KERN_CRIT "[%s] memdom_priv_mod(%ld, %ld, %ld)\n", __func__, memdom_id1, ribbon_id, memdom_priv_value);
-//          rc = memdom_priv_mod(memdom_id1, ribbon_id, memdom_priv_value);
-            
-        }
+            rc = memdom_priv_del(memdom_id1, ribbon_id, memdom_priv_value);            
+        }        
     }
 
     return rc;
@@ -128,8 +110,8 @@ int ribbon_internal_function_dispatcher(int ribbon_op, long ribbon_id, int ribbo
             printk( "[%s] ribbon_leave_domain(%ld, %ld)\n", __func__, ribbon_id, memdom_id1);
             rc = ribbon_leave_memdom(memdom_id1, ribbon_id, NULL);
         }else if(ribbon_domain_op == 2){
-            printk("[%s] ribbon_isin_domain(%ld, %ld)\n", __func__, ribbon_id, memdom_id1);
-            rc = ribbon_is_in_memdom(ribbon_id, memdom_id1);
+            printk("[%s] ribbon_is_in_domain(%ld, %ld)\n", __func__, memdom_id1, ribbon_id);
+            rc = ribbon_is_in_memdom(memdom_id1, ribbon_id);
         }
     }
 
@@ -244,6 +226,7 @@ int parse_message(char* message){
         
         // ribbon: get ribbon id
         else if( message_type == 1 && (ribbon_op >= 1 || ribbon_op <= 6) && ribbon_id == -1){
+            printk(KERN_CRIT "memdom token 3 (ribbon_id): %s\n", token);
             if( kstrtol(token, 10, &ribbon_id) ){
                 return -1;
             }
@@ -322,6 +305,7 @@ int parse_message(char* message){
         }
             // ribbon gets memory domain id
         else if(message_type == 1 && ribbon_op == 3 && memdom_id1 == -1){
+            printk(KERN_CRIT "ribbon gets memdom_id1: %s\n", token);
             if( kstrtol(token, 10, &memdom_id1) )
                 return -1;
             continue;
@@ -330,7 +314,7 @@ int parse_message(char* message){
         
         /* token 6*/
         // memdom gets memdom privilege value 
-        if( message_type == 0 && ribbon_id != 0 && memdom_priv_op != -1 && memdom_priv_value == -1){
+        if( message_type == 0 && ribbon_id != -1 && memdom_priv_op != -1 && memdom_priv_value == -1){
             printk(KERN_CRIT "memdom token 6 (memdom_priv_value): %s\n", token);
 
             if( kstrtol(token, 10, &memdom_priv_value) ){
@@ -341,6 +325,7 @@ int parse_message(char* message){
         }
         // ribbon gets 2nd memory domain id
         else if( message_type == 1 && memdom_id1 != -1 && memdom_id2 == -1){
+            printk(KERN_CRIT "ribbon gets memdom_id2: %s\n", token);
             if( kstrtol(token, 10, &memdom_id2) )
                 return -1;
             continue;
