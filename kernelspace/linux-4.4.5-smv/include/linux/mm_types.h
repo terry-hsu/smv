@@ -400,6 +400,7 @@ struct mm_struct {
 	struct memdom_struct *memdom_metadata[MAX_MEMDOM];	/* Bookkeeping of per-process memory domains info */
 	struct ribbon_struct *ribbon_metadata[MAX_RIBBON];	/* Bookkeeping of per-process ribbons info */
 	struct mutex smv_metadataMutex;	/* mutex protecting memdom/ribbon_metadata and memdom/ribbon_bitmap */
+	int using_smv;	/* set to 1 if current mm is using the secure memory view model */
 
 	struct vm_area_struct *mmap;		/* list of VMAs */
 	struct rb_root mm_rb;

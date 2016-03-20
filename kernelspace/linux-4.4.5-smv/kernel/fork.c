@@ -597,6 +597,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
     mutex_init(&mm->smv_metadataMutex);    /* Initialize mutex that protects ribbon */    
 	memset(mm->ribbon_metadata, 0, sizeof(struct ribbon_struct*) * MAX_RIBBON);	/* If the first element is NULL, then no ribbon is created yet */
 	memset(mm->memdom_metadata, 0, sizeof(struct memdom_struct*) * MAX_MEMDOM); /* If the first element is NULL, then no memdom is created yet */
+	mm->using_smv = 0;
 
 	mm->mmap = NULL;
 	mm->mm_rb = RB_ROOT;

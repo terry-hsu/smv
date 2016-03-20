@@ -46,6 +46,7 @@ extern void ribbon_init(void);
 #define allocate_ribbon()         (kmem_cache_alloc(ribbon_cachep, GFP_KERNEL))
 #define free_ribbon(ribbon)       (kmem_cache_free(ribbon_cachep, ribbon))
 
+int ribbon_main_init(void);
 int ribbon_create(void);
 int ribbon_kill(int ribbon_id, struct mm_struct *mm);
 void free_all_ribbons(struct mm_struct *mm);

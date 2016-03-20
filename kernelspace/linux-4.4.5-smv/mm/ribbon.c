@@ -19,6 +19,19 @@ void ribbon_init(void){
     }
 }
 
+/* Telling the kernel that this process will be using the secure memory view model */
+int ribbon_main_init(void){
+    struct mm_struct *mm = current->mm;
+    if( !mm ) {
+        printk(KERN_ERR "[%s] current task does not have mm\n", __func__);
+        return -1;
+    }
+    mutex_lock(&mm->smv_metadataMutex);
+    mm->using_smv = 1;
+    mutex_unlock(&mm->smv_metadataMutex);
+    return 0;
+}
+
 /* Create a ribbon and update metadata */
 int ribbon_create(void){
     int ribbon_id = -1;

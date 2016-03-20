@@ -350,7 +350,7 @@ int parse_message(char* message){
             return ribbon_get_ribbon_id();
         }
         else if (ribbon_op == 9) {
-//          __ribbon_main_init();
+            ribbon_main_init();
             return 0;
         }
         else if (ribbon_op == 7) {
