@@ -51,9 +51,6 @@ extern void memdom_init(void);
 #define allocate_memdom()   (kmem_cache_alloc(memdom_cachep, GFP_KERNEL))
 #define free_memdom(memdom) (kmem_cache_free(memdom_cachep, memdom))
 
-struct memdom_struct *create_memdom_metadata(void);
-void free_memdom_metadata(struct memdom_struct *memdom);
-
 /* Memoey domain functions */
 int memdom_create(void);
 unsigned long memdom_free(unsigned long addr);

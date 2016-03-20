@@ -22,49 +22,6 @@ void memdom_init(void){
     }
 }
 
-struct memdom_struct *create_memdom_metadata(void){
-    struct memdom_struct *memdom = NULL;
-    struct mm_struct *mm = current->mm;
-
-    if( !mm ) {
-        return NULL;
-    }
-
-    /* Create memdom struct */
-    memdom = allocate_memdom();
-    if( !memdom ) {
-        printk(KERN_ERR "[%s] cannot allocate memdom metadata\n", __func__);
-        return NULL;
-    }
-
-    /* Assign memdom ID */
-    memdom->memdom_id = atomic_read(&mm->num_memdoms);
-
-    /* Add 1 to existing memdom count in process's mm */
-    atomic_inc(&mm->num_memdoms);
-
-    /* This memdom does not have any ribbons for Read/Write/Execute/Allocate yet */
-    bitmap_zero(memdom->ribbon_bitmapRead, MAX_RIBBON);
-    bitmap_zero(memdom->ribbon_bitmapWrite, MAX_RIBBON);
-    bitmap_zero(memdom->ribbon_bitmapExecute, MAX_RIBBON);
-    bitmap_zero(memdom->ribbon_bitmapAllocate, MAX_RIBBON);
-
-    /* Initialize mutex that protects this ribbon */
-    mutex_init(&memdom->memdom_mutex);   
-
-    return NULL;
-}
-
-/* Free all the memdoms in this mm_struct */
-void free_all_memdoms(struct mm_struct *mm){
-    int index = 0;
-    while( atomic_read(&mm->num_memdoms) > 0 ){
-        index = find_first_bit(mm->memdom_bitmapInUse, MAX_MEMDOM);
-        printk(KERN_INFO "[%s] killing ribbon %d, remaining #ribbons: %d\n", __func__, index, atomic_read(&mm->num_ribbons));
-        memdom_kill(index, mm);
-    }
-}
-
 /* Create a memdom and update metadata */
 int memdom_create(void){
     int memdom_id = -1;
@@ -85,7 +42,7 @@ int memdom_create(void){
         goto err;        
     }
 
-    /* TODO: create the actual memdom struct */
+    /* Create the actual memdom struct */
     memdom = allocate_memdom();
     memdom->memdom_id = memdom_id;
     bitmap_zero(memdom->ribbon_bitmapRead, MAX_RIBBON);    
@@ -144,8 +101,9 @@ int find_first_ribbon(struct memdom_struct *memdom){
     return ribbon_id;
 }
 
+/* Free a memory domain metadata and remove it from mm_struct */
 int memdom_kill(int memdom_id, struct mm_struct *mm){
-    struct memdom_struct *memdom = mm->memdom_metadata[memdom_id];
+    struct memdom_struct *memdom = NULL;
     int ribbon_id = 0;
 
     if( memdom_id >= MAX_MEMDOM ) {
@@ -155,12 +113,13 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
 
     /* When user space program calls memdom_kill, mm_struct is NULL
      * If free_all_memdoms calls this function, it passes the about-to-destroy mm_struct, not current->mm */
-    if( mm == NULL ) {
+    if( !mm ) {
         mm = current->mm;
     }
-
+    
     /* SMP: protect shared memdom bitmap */
     mutex_lock(&mm->memdom_bitmapMutex);
+    memdom = mm->memdom_metadata[memdom_id];
 
     /* TODO: check if current task has the permission to delete the memdom, only master thread can do this */
     
@@ -168,20 +127,20 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     if( test_bit(memdom_id, mm->memdom_bitmapInUse) ) {
         clear_bit(memdom_id, mm->memdom_bitmapInUse);  
     } else {
-        printk(KERN_ERR "Error, trying to delete a memdom that does not exist: memdom %d\n", memdom_id);
+        printk(KERN_ERR "Error, trying to delete a memdom that does not exist: memdom %d, #memdoms: %d\n", memdom_id, atomic_read(&mm->num_memdoms));
         mutex_unlock(&mm->memdom_bitmapMutex);
         return -1;
     }
 
-    /* Clear all ribbon_bitmapR/W/E/A bits for this memdom in all ribbons */
+    /* Clear all ribbon_bitmapR/W/E/A bits for this memdom in all ribbons */    
     ribbon_id = find_first_ribbon(memdom);
     while( ribbon_id != MAX_RIBBON ) {
         ribbon_leave_memdom(memdom_id, ribbon_id, mm); 
         ribbon_id = find_first_ribbon(memdom);
-    }
+    }   
 
     /* Free the actual memdom struct */
-    free_memdom(mm->memdom_metadata[memdom_id]);
+    free_memdom(memdom);
     mm->memdom_metadata[memdom_id] = NULL;
 
     /* Decrement memdom count */
@@ -195,6 +154,16 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
 
 }
 EXPORT_SYMBOL(memdom_kill);
+
+/* Free all the memdoms in this mm_struct */
+void free_all_memdoms(struct mm_struct *mm){
+    int index = 0;
+    while( atomic_read(&mm->num_memdoms) > 0 ){
+        index = find_first_bit(mm->memdom_bitmapInUse, MAX_MEMDOM);
+        printk(KERN_INFO "[%s] killing memdom %d, remaining #memdom: %d\n", __func__, index, atomic_read(&mm->num_memdoms));
+        memdom_kill(index, mm);
+    }
+}
 
 unsigned long memdom_alloc(int memdom_id, unsigned long sz){
 
