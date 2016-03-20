@@ -397,10 +397,9 @@ struct mm_struct {
 	atomic_t num_memdoms;	/* number of memdoms the current process has */
 	DECLARE_BITMAP(memdom_bitmapInUse, MAX_MEMDOM); /* Bitmap of memdoms in use.  set to 1 if memdom[i] is in use, 0 otherwise. */
     DECLARE_BITMAP(ribbon_bitmapInUse, MAX_RIBBON); /* Bitmap of ribbons in use.  set to 1 if ribbon[i] is in use, 0 otherwise. */
-	struct mutex memdom_bitmapMutex;	/* mutex protecting memdom inuse bitmap */
-	struct mutex ribbon_bitmapMutex;	/* mutex protecting ribbon inuse bitmap */
 	struct memdom_struct *memdom_metadata[MAX_MEMDOM];	/* Bookkeeping of per-process memory domains info */
 	struct ribbon_struct *ribbon_metadata[MAX_RIBBON];	/* Bookkeeping of per-process ribbons info */
+	struct mutex smv_metadataMutex;	/* mutex protecting memdom/ribbon_metadata and memdom/ribbon_bitmap */
 
 	struct vm_area_struct *mmap;		/* list of VMAs */
 	struct rb_root mm_rb;

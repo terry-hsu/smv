@@ -29,7 +29,7 @@ int memdom_create(void){
     struct memdom_struct *memdom = NULL;
 
     /* SMP: protect shared memdom bitmap */
-    mutex_lock(&mm->memdom_bitmapMutex);
+    mutex_lock(&mm->smv_metadataMutex);
 
     /* Are we having too many memdoms? */
     if( atomic_read(&mm->num_memdoms) == MAX_MEMDOM ) {
@@ -51,7 +51,7 @@ int memdom_create(void){
     bitmap_zero(memdom->ribbon_bitmapAllocate, MAX_RIBBON);    
     mutex_init(&memdom->memdom_mutex);
 
-    /* Record this new ribbon to mm */
+    /* Record this new memdom to mm */
     mm->memdom_metadata[memdom_id] = memdom;
 
     /* Set bit in memdom bitmap */
@@ -68,7 +68,7 @@ err:
     printk(KERN_ERR "Too many memdoms, cannot create more.\n");
     memdom_id = -1;
 out:
-    mutex_unlock(&mm->memdom_bitmapMutex);
+    mutex_unlock(&mm->smv_metadataMutex);
     return memdom_id;
 }
 EXPORT_SYMBOL(memdom_create);
@@ -118,7 +118,7 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     }
     
     /* SMP: protect shared memdom bitmap */
-    mutex_lock(&mm->memdom_bitmapMutex);
+    mutex_lock(&mm->smv_metadataMutex);
     memdom = mm->memdom_metadata[memdom_id];
 
     /* TODO: check if current task has the permission to delete the memdom, only master thread can do this */
@@ -128,7 +128,7 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
         clear_bit(memdom_id, mm->memdom_bitmapInUse);  
     } else {
         printk(KERN_ERR "Error, trying to delete a memdom that does not exist: memdom %d, #memdoms: %d\n", memdom_id, atomic_read(&mm->num_memdoms));
-        mutex_unlock(&mm->memdom_bitmapMutex);
+        mutex_unlock(&mm->smv_metadataMutex);
         return -1;
     }
 
@@ -149,7 +149,7 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     printk(KERN_INFO "Deleted memdom with ID %d, #memdoms: %d / %d\n", 
             memdom_id, atomic_read(&mm->num_memdoms), MAX_MEMDOM);
 
-    mutex_unlock(&mm->memdom_bitmapMutex);
+    mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 
 }
@@ -165,6 +165,143 @@ void free_all_memdoms(struct mm_struct *mm){
     }
 }
 
+/* Set bit in memdom->ribbon_bitmapR/W/E/A */
+int memdom_priv_add(int memdom_id, int ribbon_id, int privs){
+    struct ribbon_struct *ribbon; 
+    struct memdom_struct *memdom; 
+    struct mm_struct *mm = current->mm;
+
+    mutex_lock(&mm->smv_metadataMutex);
+    ribbon = current->mm->ribbon_metadata[ribbon_id];
+    memdom = current->mm->memdom_metadata[memdom_id];
+    mutex_unlock(&mm->smv_metadataMutex);
+
+    if( !memdom || !ribbon ) {
+        printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
+        return -1;
+    }       
+    if( !ribbon_is_in_memdom(memdom_id, ribbon->ribbon_id) ) {
+        printk(KERN_ERR "[%s] ribbon %d is not in memdom %d, please make ribbon join memdom first.\n", __func__, ribbon_id, memdom_id);
+        return -1;  
+    }
+    
+    /* TODO: Add privilege check to see if current thread can change the privilege */
+
+    /* Set privileges in memdom's bitmap */   
+    mutex_lock(&memdom->memdom_mutex);
+    if( privs & MEMDOM_READ ) {
+        set_bit(ribbon_id, memdom->ribbon_bitmapRead);
+        printk(KERN_INFO "[%s] Added read privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+    }
+    if( privs & MEMDOM_WRITE ) {
+        set_bit(ribbon_id, memdom->ribbon_bitmapWrite);
+        printk(KERN_INFO "[%s] Added write privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+    }
+    if( privs & MEMDOM_EXECUTE ) {
+        set_bit(ribbon_id, memdom->ribbon_bitmapExecute);
+        printk(KERN_INFO "[%s] Added execute privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+    }
+    if( privs & MEMDOM_ALLOCATE ) {
+        set_bit(ribbon_id, memdom->ribbon_bitmapAllocate);
+        printk(KERN_INFO "[%s] Added allocate privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+    }    
+    mutex_unlock(&memdom->memdom_mutex);     
+     
+    return 0;
+}
+EXPORT_SYMBOL(memdom_priv_add);
+
+/* Clear bit in memdom->ribbon_bitmapR/W/E/A */
+int memdom_priv_del(int memdom_id, int ribbon_id, int privs){
+    struct ribbon_struct *ribbon = NULL;
+    struct memdom_struct *memdom = NULL;
+    struct mm_struct *mm = current->mm;
+
+    mutex_lock(&mm->smv_metadataMutex);
+    ribbon = current->mm->ribbon_metadata[ribbon_id];
+    memdom = current->mm->memdom_metadata[memdom_id];
+    mutex_unlock(&mm->smv_metadataMutex);
+
+    if( !memdom || !ribbon ) {
+        printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
+        return -1;
+    }       
+    if( !ribbon_is_in_memdom(memdom_id, ribbon->ribbon_id) ) {
+        printk(KERN_ERR "[%s] ribbon %d is not in memdom %d, please make ribbon join memdom first.\n", __func__, ribbon_id, memdom_id);
+        return -1;  
+    }
+    
+    /* TODO: Add privilege check to see if current thread can change the privilege */
+
+    /* Clear privileges in memdom's bitmap */   
+    mutex_lock(&memdom->memdom_mutex);
+    if( privs & MEMDOM_READ ) {
+        clear_bit(ribbon_id, memdom->ribbon_bitmapRead);
+        printk(KERN_INFO "[%s] Revoked read privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+    }
+    if( privs & MEMDOM_WRITE ) {
+        clear_bit(ribbon_id, memdom->ribbon_bitmapWrite);
+        printk(KERN_INFO "[%s] Revoked write privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+    }
+    if( privs & MEMDOM_EXECUTE ) {
+        clear_bit(ribbon_id, memdom->ribbon_bitmapExecute);
+        printk(KERN_INFO "[%s] Revoked execute privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+    }
+    if( privs & MEMDOM_ALLOCATE ) {
+        clear_bit(ribbon_id, memdom->ribbon_bitmapAllocate);
+        printk(KERN_INFO "[%s] Revoked allocate privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+    }            
+    mutex_unlock(&memdom->memdom_mutex);
+
+    return 0;
+}
+EXPORT_SYMBOL(memdom_priv_del);
+
+/* Return ribbon's privileges in a given memdom and return to caller */
+int memdom_priv_get(int memdom_id, int ribbon_id){
+    struct ribbon_struct *ribbon = NULL;
+    struct memdom_struct *memdom = NULL;
+    struct mm_struct *mm = current->mm;
+    int privs = 0;
+
+    mutex_lock(&mm->smv_metadataMutex);
+    ribbon = current->mm->ribbon_metadata[ribbon_id];
+    memdom = current->mm->memdom_metadata[memdom_id];
+    mutex_unlock(&mm->smv_metadataMutex);
+
+    if( !memdom || !ribbon ) {
+        printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
+        return -1;
+    }       
+    if( !ribbon_is_in_memdom(memdom_id, ribbon->ribbon_id) ) {
+        printk(KERN_ERR "[%s] ribbon %d is not in memdom %d, please make ribbon join memdom first.\n", __func__, ribbon_id, memdom_id);
+        return -1;  
+    }
+    
+    /* TODO: Add privilege check to see if current thread can change the privilege */
+
+    /* Get privilege info */
+    mutex_lock(&memdom->memdom_mutex);
+    if( test_bit(ribbon_id, memdom->ribbon_bitmapRead) ) {
+        privs = privs | MEMDOM_READ;
+    }
+    if( test_bit(ribbon_id, memdom->ribbon_bitmapWrite) ) {
+        privs = privs | MEMDOM_WRITE;
+    }
+    if( test_bit(ribbon_id, memdom->ribbon_bitmapExecute) ) {
+        privs = privs | MEMDOM_EXECUTE;
+    }
+    if( test_bit(ribbon_id, memdom->ribbon_bitmapAllocate) ) {
+        privs = privs | MEMDOM_ALLOCATE;
+    }
+    mutex_unlock(&memdom->memdom_mutex);
+
+    printk(KERN_INFO "[%s] ribbon %d has privs %x in memdom %d\n", __func__, ribbon_id, privs, memdom_id);
+    return privs;
+}
+EXPORT_SYMBOL(memdom_priv_get);
+
+
 unsigned long memdom_alloc(int memdom_id, unsigned long sz){
 
     return 0;
@@ -176,23 +313,4 @@ unsigned long memdom_free(unsigned long addr){
     return 0;
 }
 EXPORT_SYMBOL(memdom_free);
-
-int memdom_priv_add(int memdom_id, int ribbon_id, unsigned long privs){
-
-    return 0;
-}
-EXPORT_SYMBOL(memdom_priv_add);
-
-int memdom_priv_del(int memdom_id, int ribbon_id, unsigned long privs){
-
-    return 0;
-}
-EXPORT_SYMBOL(memdom_priv_del);
-
-int memdom_priv_get(int memdom_id, int ribbon_id){
-
-    return 0;
-}
-EXPORT_SYMBOL(memdom_priv_get);
-
 

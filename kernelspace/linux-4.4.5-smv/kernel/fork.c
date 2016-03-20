@@ -594,8 +594,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
 	atomic_set(&mm->num_memdoms, 0);	  
     bitmap_zero(mm->ribbon_bitmapInUse, MAX_RIBBON); /* No ribbon is allocated yet */
     bitmap_zero(mm->memdom_bitmapInUse, MAX_MEMDOM); /* No memdom is allocated yet */
-    mutex_init(&mm->ribbon_bitmapMutex);    /* Initialize mutex that protects ribbon */    
-    mutex_init(&mm->memdom_bitmapMutex);    /* Initialize mutex that protects memdom */    
+    mutex_init(&mm->smv_metadataMutex);    /* Initialize mutex that protects ribbon */    
 	memset(mm->ribbon_metadata, 0, sizeof(struct ribbon_struct*) * MAX_RIBBON);	/* If the first element is NULL, then no ribbon is created yet */
 	memset(mm->memdom_metadata, 0, sizeof(struct memdom_struct*) * MAX_MEMDOM); /* If the first element is NULL, then no memdom is created yet */
 

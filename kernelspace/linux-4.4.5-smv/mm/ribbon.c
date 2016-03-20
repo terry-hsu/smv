@@ -26,7 +26,7 @@ int ribbon_create(void){
     struct ribbon_struct *ribbon = NULL;
 
     /* SMP: protect shared ribbon bitmap */
-    mutex_lock(&mm->ribbon_bitmapMutex);
+    mutex_lock(&mm->smv_metadataMutex);
 
     /* Are we having too many ribbons? */
     if( atomic_read(&mm->num_ribbons) == MAX_RIBBON ) {
@@ -63,7 +63,7 @@ err:
     printk(KERN_ERR "Too many ribbons, cannot create more.\n");
     ribbon_id = -1;
 out:
-    mutex_unlock(&mm->ribbon_bitmapMutex);
+    mutex_unlock(&mm->smv_metadataMutex);
     return ribbon_id;
 }
 EXPORT_SYMBOL(ribbon_create);
@@ -84,7 +84,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     }
 
     /* SMP: protect shared ribbon bitmap */
-    mutex_lock(&mm->ribbon_bitmapMutex);
+    mutex_lock(&mm->smv_metadataMutex);
     ribbon = mm->ribbon_metadata[ribbon_id]; 
 
     /* TODO: check if current task has the permission to delete the ribbon, only master thread can do this */
@@ -94,7 +94,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
         clear_bit(ribbon_id, mm->ribbon_bitmapInUse);  
     } else {
         printk(KERN_ERR "Error, trying to delete a ribbon that does not exist: ribbon %d, #ribbons: %d\n", ribbon_id, atomic_read(&mm->num_ribbons));
-        mutex_unlock(&mm->ribbon_bitmapMutex);
+        mutex_unlock(&mm->smv_metadataMutex);
         return -1;
     }
 
@@ -115,7 +115,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     printk(KERN_INFO "Deleted ribbon with ID %d, #ribbons: %d / %d\n", 
             ribbon_id, atomic_read(&mm->num_ribbons), MAX_RIBBON);
 
-    mutex_unlock(&mm->ribbon_bitmapMutex);
+    mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 }
 EXPORT_SYMBOL(ribbon_kill);
@@ -132,15 +132,25 @@ void free_all_ribbons(struct mm_struct *mm){
 
 // Set memdom_id-th bit for ribbon
 int ribbon_join_memdom(int memdom_id, int ribbon_id){
-    struct ribbon_struct *ribbon = current->mm->ribbon_metadata[ribbon_id];
-    struct memdom_struct *memdom = current->mm->memdom_metadata[memdom_id];
+    struct ribbon_struct *ribbon = NULL; 
+    struct memdom_struct *memdom = NULL; 
+    struct mm_struct *mm = current->mm;
+
+    mutex_lock(&mm->smv_metadataMutex);
+    ribbon = current->mm->ribbon_metadata[ribbon_id];
+    memdom = current->mm->memdom_metadata[memdom_id];
     if( !memdom || !ribbon ) {
-        printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
+        printk(KERN_ERR "[%s] memdom %d: %p || ribbon %d: %p not found\n", __func__, memdom_id, memdom, ribbon_id, ribbon);
+        mutex_unlock(&mm->smv_metadataMutex);
         return -1;
     }   
+    mutex_unlock(&mm->smv_metadataMutex);
+
     mutex_lock(&ribbon->ribbon_mutex);
     set_bit(memdom_id, ribbon->memdom_bitmapJoin);
     mutex_unlock(&ribbon->ribbon_mutex);
+
+    printk(KERN_INFO "[%s] ribbon id %d joined memdom %d\n", __func__, ribbon_id, memdom_id);
     return 0;
 }
 EXPORT_SYMBOL(ribbon_join_memdom);
@@ -155,8 +165,10 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
     }
 
     /* Get the actual memdom and ribbon struct from this mm */
+    mutex_lock(&mm->smv_metadataMutex);
     memdom = mm->memdom_metadata[memdom_id];
     ribbon = mm->ribbon_metadata[ribbon_id];
+    mutex_unlock(&mm->smv_metadataMutex);
     if( !memdom || !ribbon ) {
         printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
         return -1;
@@ -169,7 +181,7 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
     clear_bit(ribbon_id, memdom->ribbon_bitmapWrite);
     clear_bit(ribbon_id, memdom->ribbon_bitmapExecute);
     clear_bit(ribbon_id, memdom->ribbon_bitmapAllocate);
-    mutex_lock(&memdom->memdom_mutex);
+    mutex_unlock(&memdom->memdom_mutex);
 
     /* Clear memdom_id-th bit in the bitmap for ribbon */
     mutex_lock(&ribbon->ribbon_mutex);
@@ -181,7 +193,13 @@ EXPORT_SYMBOL(ribbon_leave_memdom);
 
 /* Check if the ribbon has joined the memdom, 1 if yes, 0 otherwise */
 int ribbon_is_in_memdom(int memdom_id, int ribbon_id){
-    struct ribbon_struct *ribbon = current->mm->ribbon_metadata[ribbon_id];
+    struct ribbon_struct *ribbon; 
+    struct mm_struct *mm = current->mm;
+
+    mutex_lock(&mm->smv_metadataMutex);
+    ribbon = current->mm->ribbon_metadata[ribbon_id];
+    mutex_unlock(&mm->smv_metadataMutex);
+
     int in = 0;    
     if( !ribbon ) {
         printk(KERN_ERR "[%s] ribbon %p not found\n", __func__, ribbon);
