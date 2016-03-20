@@ -138,7 +138,9 @@ int ribbon_join_memdom(int memdom_id, int ribbon_id){
         printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
         return -1;
     }   
+    mutex_lock(&ribbon->ribbon_mutex);
     set_bit(memdom_id, ribbon->memdom_bitmapJoin);
+    mutex_unlock(&ribbon->ribbon_mutex);
     return 0;
 }
 EXPORT_SYMBOL(ribbon_join_memdom);
@@ -162,14 +164,17 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
     printk(KERN_ERR "[%s] memdom %p, ribbon %p\n", __func__, memdom, ribbon);
 
     /* Clear ribbon_id-th bit in the bitmap for memdom */
+    mutex_lock(&memdom->memdom_mutex);
     clear_bit(ribbon_id, memdom->ribbon_bitmapRead);
     clear_bit(ribbon_id, memdom->ribbon_bitmapWrite);
     clear_bit(ribbon_id, memdom->ribbon_bitmapExecute);
     clear_bit(ribbon_id, memdom->ribbon_bitmapAllocate);
+    mutex_lock(&memdom->memdom_mutex);
 
     /* Clear memdom_id-th bit in the bitmap for ribbon */
+    mutex_lock(&ribbon->ribbon_mutex);
     clear_bit(memdom_id, ribbon->memdom_bitmapJoin);
-
+    mutex_unlock(&ribbon->ribbon_mutex);
     return 0;
 }
 EXPORT_SYMBOL(ribbon_leave_memdom);
@@ -177,19 +182,22 @@ EXPORT_SYMBOL(ribbon_leave_memdom);
 /* Check if the ribbon has any privileges in the memdom, 1 if yes, 0 otherwise */
 int ribbon_is_in_memdom(int memdom_id, int ribbon_id){
     struct memdom_struct *memdom = mm->memdom_metadata[memdom_id];
+    int in = 0;
     if( !memdom ) {
         printk(KERN_ERR "[%s] Error, memdom is NULL\n", __func__);
         return -1;
     }
 
     /* Check permission */
+    mutex_lock(&memdom->memdom_mutex);
     if( test_bit(ribbon_id, memdom->ribbon_bitmapRead) ||
         test_bit(ribbon_id, memdom->ribbon_bitmapWrite) ||
         test_bit(ribbon_id, memdom->ribbon_bitmapExecute) ||
         test_bit(ribbon_id, memdom->ribbon_bitmapAllocate) ) {
-        return 1;
+        in = 1;
     }
-    return 0;
+    mutex_unlock(&memdom->memdom_mutex);
+    return in;
 }
 EXPORT_SYMBOL(ribbon_is_in_memdom);
 
