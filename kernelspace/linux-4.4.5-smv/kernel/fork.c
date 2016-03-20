@@ -591,9 +591,14 @@ static void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
 static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
 {
     atomic_set(&mm->num_ribbons, 0);
-	atomic_set(&mm->num_memdoms, 0);
-	mm->ribbon_metadata = create_ribbon_metadata();
-	mm->memdom_metadata = create_memdom_metadata();
+	atomic_set(&mm->num_memdoms, 0);	  
+    bitmap_zero(mm->ribbon_bitmapInUse, MAX_RIBBON); /* No ribbon is allocated yet */
+    bitmap_zero(mm->memdom_bitmapInUse, MAX_MEMDOM); /* No memdom is allocated yet */
+    mutex_init(&mm->ribbon_bitmapMutex);    /* Initialize mutex that protects ribbon */    
+    mutex_init(&mm->memdom_bitmapMutex);    /* Initialize mutex that protects memdom */    
+	memset(mm->ribbon_metadata, 0, sizeof(struct ribbon_struct*) * MAX_RIBBON);	/* If the first element is NULL, then no ribbon is created yet */
+	memset(mm->memdom_metadata, 0, sizeof(struct memdom_struct*) * MAX_MEMDOM); /* If the first element is NULL, then no memdom is created yet */
+
 	mm->mmap = NULL;
 	mm->mm_rb = RB_ROOT;
 	mm->vmacache_seqnum = 0;
@@ -688,12 +693,12 @@ struct mm_struct *mm_alloc(void)
 void __mmdrop(struct mm_struct *mm)
 {
 	BUG_ON(mm == &init_mm);
+	free_all_ribbons(mm);
+	free_all_memdoms(mm);
 	mm_free_pgd(mm);
 	destroy_context(mm);
 	mmu_notifier_mm_destroy(mm);
 	check_mm(mm);
-	free_ribbon_metadata(mm->ribbon_metadata);
-	free_memdom_metadata(mm->memdom_metadata);
 	free_mm(mm);
 }
 EXPORT_SYMBOL_GPL(__mmdrop);
