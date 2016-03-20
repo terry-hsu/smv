@@ -69,7 +69,7 @@ out:
 EXPORT_SYMBOL(ribbon_create);
 
 int ribbon_kill(int ribbon_id, struct mm_struct *mm){
-    struct ribbon_struct *ribbon; 
+    struct ribbon_struct *ribbon = NULL; 
     int memdom_id = 0;
 
     if( ribbon_id >= MAX_RIBBON ) {
@@ -129,7 +129,6 @@ void free_all_ribbons(struct mm_struct *mm){
         ribbon_kill(index, mm);
     }
 }
-
 
 int ribbon_join_memdom(int memdom_id, int ribbon_id){
 
