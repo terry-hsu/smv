@@ -4,7 +4,7 @@ KERNEL_SRC=./linux-4.4.5-smv/
 
 cd $KERNEL_SRC
 echo "===================== [x64-kernel] Compiling kernel image.  ====================="
-make -j 8;
+make ARCH=x86_64 -j 4;
 if [ $? -eq 0 ]; then
     echo " ====================== Kernel compiled successfully. =========================="
 else
@@ -13,7 +13,7 @@ else
 fi
 
 echo "===================== [x64-kernel] Compiling kernel modules. ====================="
-make -j 8 modules;
+make ARCH=x86_64 -j 4 modules;
 if [ $? -eq 0 ]; then
     echo " ===================== Kernel modules compiled successfully. ========================="
 else
@@ -21,7 +21,7 @@ else
     exit $?
 fi
 
-sudo make -j 8 modules_install;
+sudo make ARCH=x86_64 -j 4 modules_install;
 if [ $? -eq 0 ]; then
     echo " ================== kernel modules installed successfully. ======================"
 else
@@ -29,7 +29,7 @@ else
     exit $?
 fi
 
-sudo make install;
+sudo make ARCH=x86_64 -j 4 install;
 if [ $? -eq 0 ]; then
     echo " ================== kernel image installed successfully. ======================"
 else
@@ -44,3 +44,4 @@ echo "===================== [x64-kernel] Compile netlink module for ribbons. ===
 cd $NETLINK_DIR
 make
 cd ..
+
