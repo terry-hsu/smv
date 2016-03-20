@@ -130,13 +130,20 @@ void free_all_ribbons(struct mm_struct *mm){
     }
 }
 
+// Set memdom_id-th bit for ribbon
 int ribbon_join_memdom(int memdom_id, int ribbon_id){
-
+    struct ribbon_struct *ribbon = current->mm->ribbon_metadata[ribbon_id];
+    struct memdom_struct *memdom = current->mm->memdom_metadata[memdom_id];
+    if( !memdom || !ribbon ) {
+        printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
+        return -1;
+    }   
+    set_bit(memdom_id, ribbon->memdom_bitmapJoin);
     return 0;
 }
 EXPORT_SYMBOL(ribbon_join_memdom);
 
-// Set bit to 0 for R/W/E/A in memdom
+// Clear ribbon_id-th bit for R/W/E/A in memdom
 int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
     struct memdom_struct *memdom = NULL;   
     struct ribbon_struct *ribbon = NULL;
@@ -167,8 +174,21 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
 }
 EXPORT_SYMBOL(ribbon_leave_memdom);
 
+/* Check if the ribbon has any privileges in the memdom, 1 if yes, 0 otherwise */
 int ribbon_is_in_memdom(int memdom_id, int ribbon_id){
+    struct memdom_struct *memdom = mm->memdom_metadata[memdom_id];
+    if( !memdom ) {
+        printk(KERN_ERR "[%s] Error, memdom is NULL\n", __func__);
+        return -1;
+    }
 
+    /* Check permission */
+    if( test_bit(ribbon_id, memdom->ribbon_bitmapRead) ||
+        test_bit(ribbon_id, memdom->ribbon_bitmapWrite) ||
+        test_bit(ribbon_id, memdom->ribbon_bitmapExecute) ||
+        test_bit(ribbon_id, memdom->ribbon_bitmapAllocate) ) {
+        return 1;
+    }
     return 0;
 }
 EXPORT_SYMBOL(ribbon_is_in_memdom);
