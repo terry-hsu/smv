@@ -6,3 +6,4 @@ HEAD
 ORIG_HEAD
 index
 *.o
+.DS_Store
