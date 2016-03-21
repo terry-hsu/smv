@@ -532,15 +532,15 @@ fail_nomem:
 
 static inline int mm_alloc_pgd(struct mm_struct *mm)
 {
-	mm->pgd = pgd_alloc(mm);
-	if (unlikely(!mm->pgd))
+	mm->pgd[0] = pgd_alloc(mm);
+	if (unlikely(!mm->pgd[0]))
 		return -ENOMEM;
 	return 0;
 }
 
 static inline void mm_free_pgd(struct mm_struct *mm)
 {
-	pgd_free(mm, mm->pgd);
+	pgd_free(mm, mm->pgd[0]);
 }
 #else
 static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
@@ -1429,6 +1429,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	p->sequential_io	= 0;
 	p->sequential_io_avg	= 0;
 #endif
+	p->ribbon_id = -1; /* Not using any ribbons at first */
 
 	/* Perform scheduler related setup. Assign this task to a CPU. */
 	retval = sched_fork(clone_flags, p);

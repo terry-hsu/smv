@@ -209,12 +209,12 @@ EXPORT_SYMBOL(ribbon_leave_memdom);
 int ribbon_is_in_memdom(int memdom_id, int ribbon_id){
     struct ribbon_struct *ribbon; 
     struct mm_struct *mm = current->mm;
+    int in = 0;    
 
     mutex_lock(&mm->smv_metadataMutex);
     ribbon = current->mm->ribbon_metadata[ribbon_id];
     mutex_unlock(&mm->smv_metadataMutex);
 
-    int in = 0;    
     if( !ribbon ) {
         printk(KERN_ERR "[%s] ribbon %p not found\n", __func__, ribbon);
         return 0;        
