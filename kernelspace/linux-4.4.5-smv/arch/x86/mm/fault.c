@@ -970,7 +970,7 @@ spurious_fault(unsigned long error_code, unsigned long address)
 	    && error_code != (PF_INSTR | PF_PROT))
 		return 0;
 
-	pgd = init_mm.pgd + pgd_index(address);
+	pgd = init_mm.pgd[0] + pgd_index(address);
 	if (!pgd_present(*pgd))
 		return 0;
 
