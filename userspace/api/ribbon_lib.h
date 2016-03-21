@@ -44,7 +44,7 @@ int ribbon_leave_domain(int memdom_id, int ribbon_id);
 int ribbon_is_in_domain(int memdom_id, int ribbon_id);
 
 /* Create an smv thread running in a ribbon */
-pthread_t *ribbon_thread_create(int ribbon_id, void *(*fn)(void*), void *args);
+int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args);
 
 #ifdef __cplusplus
 }

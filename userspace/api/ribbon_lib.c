@@ -100,21 +100,22 @@ int ribbon_is_in_domain(int memdom_id, int ribbon_id) {
 	return rv;
 }
 
-/* Create an smv thread running in a ribbon */
-pthread_t *ribbon_thread_create(int ribbon_id, void *(*fn)(void*), void *args){
+/* Create an smv thread running in a ribbon, return 0 on success, -1 otherwise */
+int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args){
 	int rv = 0;
-	pthread_t *tid = NULL;
+	char buf[100];
 
 	/* Atomic operation */
 	pthread_mutex_lock(&create_thread_mutex);
 
 	/* Tell the kernel we are going to create a pthread, that is actually an smv thread
 	 * The kernel will set mm->standby_ribbon_id = ribbon_id */
-	rv = message_to_kernel("ribbon,registerthread");
+	sprintf(buf, "ribbon,registerthread,%d", ribbon_id);
+	rv = message_to_kernel(buf);
 	if ( rv != 0) {
 		fprintf(stderr, "register_ribbon_thread for ribbon %d failed\n", ribbon_id);		
 		pthread_mutex_unlock(&create_thread_mutex);
-		return NULL;
+		return -1;
 	}
 
 	/* Create a pthread (kernel knows it's a ribbon thread because we registered a ribbon id for this thread */
@@ -122,10 +123,10 @@ pthread_t *ribbon_thread_create(int ribbon_id, void *(*fn)(void*), void *args){
 	if (rv) {
 		fprintf(stderr, "pthread_create for ribbon %d failed\n", ribbon_id);		
 		pthread_mutex_unlock(&create_thread_mutex);
-		return NULL;
+		return -1;
 	}
 
 	pthread_mutex_unlock(&create_thread_mutex);
 
-	return tid;
+	return 0;
 }
