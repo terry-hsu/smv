@@ -31,6 +31,7 @@ int ribbon_main_init(void){
     mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 }
+EXPORT_SYMBOL(ribbon_main_init);
 
 /* Create a ribbon and update metadata */
 int ribbon_create(void){
