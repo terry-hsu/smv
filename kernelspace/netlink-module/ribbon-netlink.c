@@ -186,6 +186,7 @@ int parse_message(char* message){
             continue;
         }
         else if( message_type == 1 && ribbon_op == -1){ // ribbon
+            printk(KERN_CRIT "ribbon token 2 (op): %s\n", token);
             if( (strcmp(token, "create")) == 0 )
                 ribbon_op = 0;
             else if( (strcmp(token, "kill")) == 0 )
@@ -361,6 +362,7 @@ int parse_message(char* message){
             return 0;
         } 
         else if (ribbon_op == 5) {
+            printk(KERN_INFO "[%s] register ribbon thread running in ribbon %ld\n", __func__, ribbon_id);
             register_ribbon_thread(ribbon_id);
             return 0;
         } 

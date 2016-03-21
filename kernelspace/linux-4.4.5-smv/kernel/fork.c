@@ -1776,8 +1776,15 @@ long _do_fork(unsigned long clone_flags,
 		nr = PTR_ERR(p);
 	}
 
-	/* Reset ribbon_id for ribbon_thread_create, no need to check. User space guarantees the atomic operation of forking ribbon threads */
-	current->mm->standby_ribbon_id = -1;
+	/* Reset ribbon_id for ribbon_thread_create, no need to check. 
+	 * User space guarantees the atomic operation of forking ribbon threads 
+	 */
+	if (current->mm) {
+		if ( current->mm->standby_ribbon_id != -1 ) {
+			printk(KERN_INFO "[%s] forked ribbon thread running in ribbon %d\n", __func__, current->mm->standby_ribbon_id);
+			current->mm->standby_ribbon_id = -1;
+		}
+	}
 
 	return nr;
 }
