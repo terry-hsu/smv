@@ -114,7 +114,6 @@ int ribbon_internal_function_dispatcher(int ribbon_op, long ribbon_id, int ribbo
             rc = ribbon_is_in_memdom(memdom_id1, ribbon_id);
         }
     }
-
     return rc;
 }
 
@@ -197,7 +196,7 @@ int parse_message(char* message){
                 ribbon_op = 3;
             else if ((strcmp(token, "dump_vma")) == 0 ) 
                 ribbon_op = 4; // print all vma a ribbon holds
-            else if ((strcmp(token, "initthread")) == 0 ) 
+            else if ((strcmp(token, "registerthread")) == 0 ) 
                 ribbon_op = 5;
             else if ((strcmp(token, "printpgtable")) == 0) 
                 ribbon_op = 6; //get ribbon id            
@@ -362,7 +361,7 @@ int parse_message(char* message){
             return 0;
         } 
         else if (ribbon_op == 5) {
-//          __ribbon_thread_init(ribbon_id);
+            register_ribbon_thread(ribbon_id);
             return 0;
         } 
         else if (ribbon_op == 6) {

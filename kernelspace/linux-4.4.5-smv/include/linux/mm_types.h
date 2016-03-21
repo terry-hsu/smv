@@ -401,6 +401,7 @@ struct mm_struct {
 	struct ribbon_struct *ribbon_metadata[MAX_RIBBON];	/* Bookkeeping of per-process ribbons info */
 	struct mutex smv_metadataMutex;	/* mutex protecting memdom/ribbon_metadata and memdom/ribbon_bitmap */
 	int using_smv;	/* set to 1 if current mm is using the secure memory view model */
+	int standby_ribbon_id; /* For smv_thread_create to tell the kernel what ribbon an about-to-run thread will be running in */
 
 	struct vm_area_struct *mmap;		/* list of VMAs */
 	struct rb_root mm_rb;

@@ -54,4 +54,5 @@ int ribbon_join_memdom(int memdom_id, int ribbon_id);
 int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm);
 int ribbon_is_in_memdom(int memdom_id, int ribbon_id);
 int ribbon_get_ribbon_id(void);
+int register_ribbon_thread(int ribbon_id);
 #endif

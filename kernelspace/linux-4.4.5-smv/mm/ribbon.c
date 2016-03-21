@@ -233,3 +233,17 @@ int ribbon_get_ribbon_id(void){
     return 0;
 }
 EXPORT_SYMBOL(ribbon_get_ribbon_id);
+
+/* Put ribbon_id in mm struct for do_fork to use, return -1 if ribbon_id does not exist */
+int register_ribbon_thread(int ribbon_id){
+    struct mm_struct *mm = current->mm;
+    mutex_lock(&mm->smv_metadataMutex);
+    if( !test_bit(ribbon_id, mm->ribbon_bitmapInUse) ) {
+        printk(KERN_ERR "[%s] ribbon %d not found\n", __func__, ribbon_id);
+        return -1;
+    }
+    mm->standby_ribbon_id = ribbon_id;  // Will be reset to -1 when do_fork exits.
+    mutex_unlock(&mm->smv_metadataMutex);
+    return 0;
+}
+EXPORT_SYMBOL(register_ribbon_thread);

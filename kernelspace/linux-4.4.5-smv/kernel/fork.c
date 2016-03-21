@@ -598,6 +598,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
 	memset(mm->ribbon_metadata, 0, sizeof(struct ribbon_struct*) * MAX_RIBBON);	/* If the first element is NULL, then no ribbon is created yet */
 	memset(mm->memdom_metadata, 0, sizeof(struct memdom_struct*) * MAX_MEMDOM); /* If the first element is NULL, then no memdom is created yet */
 	mm->using_smv = 0;
+	mm->standby_ribbon_id = -1;
 
 	mm->mmap = NULL;
 	mm->mm_rb = RB_ROOT;
@@ -988,6 +989,7 @@ static int copy_mm(unsigned long clone_flags, struct task_struct *tsk)
 	if (clone_flags & CLONE_VM) {
 		atomic_inc(&oldmm->mm_users);
 		mm = oldmm;
+		/* TODO: allocate a new pgd if it's an smv thread */
 		goto good_mm;
 	}
 
@@ -1773,6 +1775,10 @@ long _do_fork(unsigned long clone_flags,
 	} else {
 		nr = PTR_ERR(p);
 	}
+
+	/* Reset ribbon_id for ribbon_thread_create, no need to check. User space guarantees the atomic operation of forking ribbon threads */
+	current->mm->standby_ribbon_id = -1;
+
 	return nr;
 }
 
