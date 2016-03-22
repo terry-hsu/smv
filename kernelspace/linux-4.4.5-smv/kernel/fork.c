@@ -989,7 +989,7 @@ static int copy_mm(unsigned long clone_flags, struct task_struct *tsk)
 	if (clone_flags & CLONE_VM) {
 		atomic_inc(&oldmm->mm_users);
 		mm = oldmm;
-		/* TODO: allocate a new pgd if it's an smv thread */
+		/* TODO: Allocate a new pgd if it's an smv thread */
 		goto good_mm;
 	}
 
@@ -1431,7 +1431,13 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	p->sequential_io	= 0;
 	p->sequential_io_avg	= 0;
 #endif
-	p->ribbon_id = -1; /* Not using any ribbons at first */
+
+	/* Get ribbon_id if any stored in mm */
+	if (current->mm) {
+		p->ribbon_id = current->mm->standby_ribbon_id; // Could be -1 if it's not ribbon thread
+	} else {
+		p->ribbon_id = -1;
+	}
 
 	/* Perform scheduler related setup. Assign this task to a CPU. */
 	retval = sched_fork(clone_flags, p);
@@ -1776,12 +1782,13 @@ long _do_fork(unsigned long clone_flags,
 		nr = PTR_ERR(p);
 	}
 
-	/* Reset ribbon_id for ribbon_thread_create, no need to check. 
+	/* Reset ribbon_id for ribbon_thread_create and assign ribbon_id to the child task p
 	 * User space guarantees the atomic operation of forking ribbon threads 
 	 */
 	if (current->mm) {
 		if ( current->mm->standby_ribbon_id != -1 ) {
 			printk(KERN_INFO "[%s] forked ribbon thread running in ribbon %d\n", __func__, current->mm->standby_ribbon_id);
+  			p->ribbon_id = current->mm->standby_ribbon_id;
 			current->mm->standby_ribbon_id = -1;
 		}
 	}
