@@ -26,6 +26,7 @@ int ribbon_main_init(void){
     mm->using_smv = 1;
     mm->pgd_ribbon[MAIN_THREAD] = mm->pgd; // record the main thread's pgd
     mm->page_table_lock_ribbon[MAIN_THREAD] = mm->page_table_lock; // record the main thread's pgtable lock
+    current->ribbon_id = MAIN_THREAD;
     mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 }
