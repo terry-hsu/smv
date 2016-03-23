@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <ribbon_lib.h>
 #include <memdom_lib.h>
 #include <pthread.h>
@@ -26,6 +27,7 @@ void *fn(void *args){
 
 int main(){
     int i = 0;
+    int rv = 0;
     int ribbon_id[NUM_THREADS];
     pthread_t tid[NUM_THREADS];
 
@@ -40,7 +42,10 @@ int main(){
     }
 
     for (i = 0; i < NUM_THREADS; i++) {
-        tid[i] = ribbon_thread_create(ribbon_id[i], &tid[i], fn, NULL);
+        rv = ribbon_thread_create(ribbon_id[i], &tid[i], fn, NULL);
+        if (rv) {
+            printf("ribbon_thread_create error\n");
+        }
     }
    
     ribbon_join_domain(memdom_id, ribbon_id[0]);
@@ -58,6 +63,7 @@ int main(){
     // wait for child threads
     for (i = 0; i < NUM_THREADS; i++) {
         pthread_join(tid[i], NULL);
+        printf("waited thread %d\n", i);
     }
 
     for (i = 0; i < NUM_THREADS; i++) {
