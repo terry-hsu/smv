@@ -4,6 +4,10 @@
 #include <linux/slab.h>
 #include <linux/mm_types.h>
 #include <linux/sched.h>
+#include <linux/gfp.h>
+#include <asm/pgalloc.h>
+
+#define PGALLOC_GFP GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO
 
 /* SLAB cache for ribbon_struct structure  */
 static struct kmem_cache *ribbon_cachep;
@@ -32,6 +36,32 @@ int ribbon_main_init(void){
     return 0;
 }
 EXPORT_SYMBOL(ribbon_main_init);
+
+/* Allocate a pgd for the new ribbon */
+pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
+    pgd_t *pgd = NULL;
+
+    if( !mm->using_smv ) {
+        printk(KERN_ERR "[%s] current mm is not using smv model.\n", __func__);
+        return NULL;
+    }
+
+    /* Allcoate pgd */
+	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP); // see implementation in pgtable.c
+    if( pgd == NULL ) { 
+        printk(KERN_ERR "[%s] failed to allocate new pgd.\n", __func__);
+        return NULL;
+    }
+
+    /* Assign to mm_struct for ribbon_id */
+    mm->pgd_ribbon[ribbon_id] = pgd;
+    return pgd;
+}
+
+/* Free a pgd for ribbon */
+void ribbon_free_pgd(int ribbon_id){
+    free_page((unsigned long)mm->pgd_ribbon[ribbon_id]);
+}
 
 /* Create a ribbon and update metadata */
 int ribbon_create(void){
@@ -65,6 +95,9 @@ int ribbon_create(void){
 
     /* Set bit in mm's ribbon bitmap */
     set_bit(ribbon_id, mm->ribbon_bitmapInUse);
+
+    /* Assign page table directory */
+    ribbon_alloc_pgd(mm, ribbon_id);
 
     /* Increase total number of ribbon count in mm_struct */
     atomic_inc(&mm->num_ribbons);
@@ -122,6 +155,8 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     /* Free the actual ribbon struct */
     free_ribbon(ribbon);
     mm->ribbon_metadata[ribbon_id] = NULL;
+
+    /* TODO: Free page tables */
 
     /* Decrement ribbon count */
     atomic_dec(&mm->num_ribbons);
