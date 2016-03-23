@@ -67,7 +67,7 @@ int ribbon_create(void){
 
     /* Assign page table directory */
     ribbon_alloc_pgd(mm, ribbon_id);
-
+    
     /* Increase total number of ribbon count in mm_struct */
     atomic_inc(&mm->num_ribbons);
 
@@ -287,6 +287,10 @@ pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
 
     /* Assign to mm_struct for ribbon_id */
     mm->pgd_ribbon[ribbon_id] = pgd;
+
+    /* Init page table lock */
+    spin_lock_init(&mm->page_table_lock_ribbon[ribbon_id]);
+
     return pgd;
 }
 
