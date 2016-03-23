@@ -30,6 +30,8 @@ int main(){
     int ribbon_id[NUM_RIBBONS_PER_THREAD];
     pthread_t tid[NUM_THREADS];
 
+    ribbon_main_init();
+
     int memdom_id = memdom_create();
     int privs = 0;
 
