@@ -243,6 +243,7 @@ int register_ribbon_thread(int ribbon_id){
     mutex_lock(&mm->smv_metadataMutex);
     if( !test_bit(ribbon_id, mm->ribbon_bitmapInUse) ) {
         printk(KERN_ERR "[%s] ribbon %d not found\n", __func__, ribbon_id);
+        mutex_unlock(&mm->smv_metadataMutex);
         return -1;
     }
     mm->standby_ribbon_id = ribbon_id;  // Will be reset to -1 when do_fork exits.
