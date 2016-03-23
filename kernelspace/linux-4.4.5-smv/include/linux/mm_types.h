@@ -428,6 +428,8 @@ struct mm_struct {
 	int map_count;				/* number of VMAs */
 
 	spinlock_t page_table_lock;		/* Protects page tables and some counters */
+	spinlock_t page_table_lock_ribbon[MAX_RIBBON+1];		/* Protects page tables and some counters for ribbons. Index at MAX_RIBBON-th pgd is for main thread  */
+
 	struct rw_semaphore mmap_sem;
 
 	struct list_head mmlist;		/* List of maybe swapped mm's.	These are globally strung

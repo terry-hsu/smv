@@ -562,6 +562,7 @@ asmlinkage __visible void __init start_kernel(void)
 	mm_init();
 
     /* Initialize ribbons and memory domains for the secure memory views model */
+    init_task.ribbon_id = -1;
 	ribbon_init();
     memdom_init();
 

@@ -105,7 +105,7 @@ static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
 }
 
 static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
-			     struct task_struct *tsk)
+			     struct task_struct *prev_tsk, struct task_struct *next_tsk)
 {
 	unsigned cpu = smp_processor_id();
 
@@ -144,6 +144,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		 * ordering guarantee we need.
 		 *
 		 */
+        switch_ribbon(prev_tsk, next_tsk, next);	// context switch from one ribbon to another
 		load_cr3(next->pgd);
 
 		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
@@ -193,6 +194,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 			 * As above, load_cr3() is serializing and orders TLB
 			 * fills with respect to the mm_cpumask write.
 			 */
+			switch_ribbon(prev_tsk, next_tsk, next);	// context switch from one ribbon to another
 			load_cr3(next->pgd);
 			trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
 			load_mm_cr4(next);
@@ -205,7 +207,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 #define activate_mm(prev, next)			\
 do {						\
 	paravirt_activate_mm((prev), (next));	\
-	switch_mm((prev), (next), NULL);	\
+	switch_mm((prev), (next), NULL, NULL);	\
 } while (0);
 
 #ifdef CONFIG_X86_32

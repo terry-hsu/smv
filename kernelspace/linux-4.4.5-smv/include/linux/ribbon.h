@@ -31,7 +31,7 @@
 #define MAX_RIBBON 1024
 #define MAX_MEMDOM 1024
 
-/* Ribbons struct metadata */
+/// Ribbons struct metadata ///
 struct ribbon_struct {
     int ribbon_id;
     atomic_t ntask;       // number of tasks running in this ribbon
@@ -39,13 +39,15 @@ struct ribbon_struct {
     struct mutex ribbon_mutex;  // lock ribbon struct to prevent race condition   
 };
 
-/* Called by init/main.c */
-extern void ribbon_init(void);
-
-/* SLAB cache for ribbon_struct structure */
-#define allocate_ribbon()         (kmem_cache_alloc(ribbon_cachep, GFP_KERNEL))
+/// --- Functions called by the kernel internally to manage memory space --- ///
+#define allocate_ribbon()         (kmem_cache_alloc(ribbon_cachep, GFP_KERNEL)) /* SLAB cache for ribbon_struct structure */
 #define free_ribbon(ribbon)       (kmem_cache_free(ribbon_cachep, ribbon))
+extern void ribbon_init(void);      /* Called by init/main.c */
+pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id);
+void ribbon_free_pgd(struct mm_struct *mm, int ribbon_id);
+void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk, struct mm_struct *next_mm);
 
+/// --- Functions exported to user space to manage metadata --- ///
 int ribbon_main_init(void);
 int ribbon_create(void);
 int ribbon_kill(int ribbon_id, struct mm_struct *mm);

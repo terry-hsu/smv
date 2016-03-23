@@ -12,17 +12,9 @@
 /* SLAB cache for ribbon_struct structure  */
 static struct kmem_cache *ribbon_cachep;
 
-void ribbon_init(void){
-    ribbon_cachep = kmem_cache_create("ribbon_struct",
-                                      sizeof(struct ribbon_struct), 0,
-                                      SLAB_HWCACHE_ALIGN|SLAB_NOTRACK, NULL);
-    if( !ribbon_cachep ) {
-        printk(KERN_ERR "[%s] ribbon slab initialization failed...\n", __func__);
-    } else{
-        printk(KERN_INFO "[%s] ribbon slab initialized\n", __func__);
-    }
-}
-
+/// ---------------------------------------------------------------------------------------------  ///
+/// ---------------------- Functions exported to user space to manage metadata ------------------  ///
+/// ---------------------------------------------------------------------------------------------  ///
 /* Telling the kernel that this process will be using the secure memory view model */
 int ribbon_main_init(void){
     struct mm_struct *mm = current->mm;
@@ -32,36 +24,12 @@ int ribbon_main_init(void){
     }
     mutex_lock(&mm->smv_metadataMutex);
     mm->using_smv = 1;
+    mm->pgd_ribbon[MAIN_THREAD] = mm->pgd; // record the main thread's pgd
+    mm->page_table_lock_ribbon[MAIN_THREAD] = mm->page_table_lock; // record the main thread's pgtable lock
     mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 }
 EXPORT_SYMBOL(ribbon_main_init);
-
-/* Allocate a pgd for the new ribbon */
-pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
-    pgd_t *pgd = NULL;
-
-    if( !mm->using_smv ) {
-        printk(KERN_ERR "[%s] current mm is not using smv model.\n", __func__);
-        return NULL;
-    }
-
-    /* Allcoate pgd */
-	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP); // see implementation in pgtable.c
-    if( pgd == NULL ) { 
-        printk(KERN_ERR "[%s] failed to allocate new pgd.\n", __func__);
-        return NULL;
-    }
-
-    /* Assign to mm_struct for ribbon_id */
-    mm->pgd_ribbon[ribbon_id] = pgd;
-    return pgd;
-}
-
-/* Free a pgd for ribbon */
-void ribbon_free_pgd(int ribbon_id){
-    free_page((unsigned long)mm->pgd_ribbon[ribbon_id]);
-}
 
 /* Create a ribbon and update metadata */
 int ribbon_create(void){
@@ -282,3 +250,69 @@ int register_ribbon_thread(int ribbon_id){
     return 0;
 }
 EXPORT_SYMBOL(register_ribbon_thread);
+
+
+/// ---------------------------------------------------------------------------------------------  ///
+/// ------------------ Functions called by kernel internally to manage memory space -------------  ///
+/// ---------------------------------------------------------------------------------------------  ///
+void ribbon_init(void){
+    ribbon_cachep = kmem_cache_create("ribbon_struct",
+                                      sizeof(struct ribbon_struct), 0,
+                                      SLAB_HWCACHE_ALIGN|SLAB_NOTRACK, NULL);
+    if( !ribbon_cachep ) {
+        printk(KERN_ERR "[%s] ribbon slab initialization failed...\n", __func__);
+    } else{
+        printk(KERN_INFO "[%s] ribbon slab initialized\n", __func__);
+    }
+}
+
+
+/* Allocate a pgd for the new ribbon */
+pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
+    pgd_t *pgd = NULL;
+
+    if( !mm->using_smv ) {
+        printk(KERN_ERR "[%s] current mm is not using smv model.\n", __func__);
+        return NULL;
+    }
+
+    /* Allcoate pgd */
+	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP); // see implementation in pgtable.c
+    if( pgd == NULL ) { 
+        printk(KERN_ERR "[%s] failed to allocate new pgd.\n", __func__);
+        return NULL;
+    }
+
+    /* Assign to mm_struct for ribbon_id */
+    mm->pgd_ribbon[ribbon_id] = pgd;
+    return pgd;
+}
+
+/* Free a pgd for ribbon */
+void ribbon_free_pgd(struct mm_struct *mm, int ribbon_id){
+    free_page((unsigned long)mm->pgd_ribbon[ribbon_id]);
+}
+
+/* Security context switch from one ribbon to another (change secure memory view) */
+void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk, struct mm_struct *next_mm){
+
+    /* 1. idle_task_exit() in core.c could pass NULL prev when taking a core offline.  
+     * 2. use_mm() in mmu_context.c could pass NULL when a kernel thread switching mm.
+       3. activate_mm() in mmu_context.h could pass NULL prev and next.
+       Skip ribbon context switch in these cases.
+     */
+    if( prev_tsk == NULL ) {
+        return;
+    }
+
+    /* Skip ribbon context switch if none of the tasks are in any ribbons */
+    if( prev_tsk->ribbon_id == -1 && next_tsk->ribbon_id == -1 ) {
+        return;
+    }
+
+    /* Tell the kernel what page tables the ribbon will be using */
+//  next_mm->pgd = next_mm->pgd_ribbon[next_tsk->ribbon_id];
+//  next_mm->page_table_lock = next_mm->page_table_lock_ribbon[next_tsk->ribbon_id];
+
+    printk(KERN_INFO "[%s] prev ribbon %d switched to next ribbon %d\n", __func__, prev_tsk->ribbon_id, next_tsk->ribbon_id);       
+}
