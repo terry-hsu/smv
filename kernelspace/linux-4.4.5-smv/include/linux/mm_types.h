@@ -417,7 +417,8 @@ struct mm_struct {
 	unsigned long mmap_legacy_base;         /* base of mmap area in bottom-up allocations */
 	unsigned long task_size;		/* size of task vm space */
 	unsigned long highest_vm_end;		/* highest vma end address */
-	pgd_t *pgd[MAX_RIBBON+1];   /* Page table used by ribbon threads.  Index at MAX_RIBBON-th pgd is for main thread */
+	pgd_t *pgd;   /* Page table used by ribbon threads.  Index at MAX_RIBBON-th pgd is for main thread */
+	pgd_t *pgd_ribbon[MAX_RIBBON+1];   /* Page table used by ribbon threads.  Index at MAX_RIBBON-th pgd is for main thread */
 	atomic_t mm_users;			/* How many users with user space? */
 	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
 	atomic_long_t nr_ptes;			/* PTE page table pages */

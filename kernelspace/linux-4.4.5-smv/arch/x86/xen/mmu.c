@@ -703,7 +703,7 @@ static int xen_pgd_walk(struct mm_struct *mm,
 				    enum pt_level),
 			unsigned long limit)
 {
-	return __xen_pgd_walk(mm, mm->pgd[0], func, limit);
+	return __xen_pgd_walk(mm, mm->pgd, func, limit);
 }
 
 /* If we're using split pte locks, then take the page's lock and
@@ -839,7 +839,7 @@ static void __xen_pgd_pin(struct mm_struct *mm, pgd_t *pgd)
 
 static void xen_pgd_pin(struct mm_struct *mm)
 {
-	__xen_pgd_pin(mm, mm->pgd[0]);
+	__xen_pgd_pin(mm, mm->pgd );
 }
 
 /*
@@ -959,7 +959,7 @@ static void __xen_pgd_unpin(struct mm_struct *mm, pgd_t *pgd)
 
 static void xen_pgd_unpin(struct mm_struct *mm)
 {
-	__xen_pgd_unpin(mm, mm->pgd[0]);
+	__xen_pgd_unpin(mm, mm->pgd );
 }
 
 /*
@@ -1013,7 +1013,7 @@ static void drop_other_mm_ref(void *info)
 
 	/* If this cpu still has a stale cr3 reference, then make sure
 	   it has been flushed. */
-	if (this_cpu_read(xen_current_cr3) == __pa(mm->pgd[0]))
+	if (this_cpu_read(xen_current_cr3) == __pa(mm->pgd ))
 		load_cr3(swapper_pg_dir);
 }
 
@@ -1033,7 +1033,7 @@ static void xen_drop_mm_ref(struct mm_struct *mm)
 	if (!alloc_cpumask_var(&mask, GFP_ATOMIC)) {
 		for_each_online_cpu(cpu) {
 			if (!cpumask_test_cpu(cpu, mm_cpumask(mm))
-			    && per_cpu(xen_current_cr3, cpu) != __pa(mm->pgd[0]))
+			    && per_cpu(xen_current_cr3, cpu) != __pa(mm->pgd ))
 				continue;
 			smp_call_function_single(cpu, drop_other_mm_ref, mm, 1);
 		}
@@ -1047,7 +1047,7 @@ static void xen_drop_mm_ref(struct mm_struct *mm)
 	   look at its actual current cr3 value, and force it to flush
 	   if needed. */
 	for_each_online_cpu(cpu) {
-		if (per_cpu(xen_current_cr3, cpu) == __pa(mm->pgd[0]))
+		if (per_cpu(xen_current_cr3, cpu) == __pa(mm->pgd ))
 			cpumask_set_cpu(cpu, mask);
 	}
 
@@ -1086,7 +1086,7 @@ static void xen_exit_mmap(struct mm_struct *mm)
 	spin_lock(&mm->page_table_lock);
 
 	/* pgd may not be pinned in the error exit path of execve */
-	if (xen_page_pinned(mm->pgd[0]))
+	if (xen_page_pinned(mm->pgd ))
 		xen_pgd_unpin(mm);
 
 	spin_unlock(&mm->page_table_lock);
@@ -1509,7 +1509,7 @@ static void __init xen_write_cr3_init(unsigned long cr3)
 
 static int xen_pgd_alloc(struct mm_struct *mm)
 {
-	pgd_t *pgd = mm->pgd[0];
+	pgd_t *pgd = mm->pgd ;
 	int ret = 0;
 
 	BUG_ON(PagePinned(virt_to_page(pgd)));
@@ -1671,7 +1671,7 @@ static inline void __set_pfn_prot(unsigned long pfn, pgprot_t prot)
 static inline void xen_alloc_ptpage(struct mm_struct *mm, unsigned long pfn,
 				    unsigned level)
 {
-	bool pinned = PagePinned(virt_to_page(mm->pgd[0]));
+	bool pinned = PagePinned(virt_to_page(mm->pgd ));
 
 	trace_xen_mmu_alloc_ptpage(mm, pfn, level, pinned);
 
@@ -2748,7 +2748,7 @@ static void xen_hvm_exit_mmap(struct mm_struct *mm)
 	int rc;
 
 	a.domid = DOMID_SELF;
-	a.gpa = __pa(mm->pgd[0]);
+	a.gpa = __pa(mm->pgd );
 	rc = HYPERVISOR_hvm_op(HVMOP_pagetable_dying, &a);
 	WARN_ON_ONCE(rc < 0);
 }
