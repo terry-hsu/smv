@@ -1052,6 +1052,22 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
 	return true;
 }
 
+/* For debugging: prints out the information about this page fault*/
+static noinline void fault_info(unsigned long error_code, unsigned long addr){
+	struct task_struct *tsk = current;
+    int prot_code = error_code & PF_PROT;
+    int write_code = error_code & PF_WRITE;
+    int user_code = error_code & PF_USER;
+    int rsvd_code = error_code & PF_RSVD;
+    int instr_code = error_code & PF_INSTR; 
+    unsigned long page_aligned_addr = addr & PAGE_MASK;
+
+	printk(KERN_INFO "[%s] pid %d ribbon %d page fault at 0x%16lx, page_aligned_addr: 0x%16lx\n",
+						__func__, tsk->pid, tsk->ribbon_id, addr, page_aligned_addr);
+    printk(KERN_INFO "[%s] prot: %d, write: %d, user: %d, rsvd: %d, instr_code: %d\n", 
+			__func__, prot_code, write_code, user_code, rsvd_code, instr_code);
+}
+
 /*
  * This routine handles page faults.  It determines the address,
  * and the problem, and then passes it off to one of the appropriate
@@ -1196,6 +1212,10 @@ retry:
 		 * down_read():
 		 */
 		might_sleep();
+	}
+
+	if (mm->using_smv) {
+		fault_info(error_code, address);
 	}
 
 	vma = find_vma(mm, address);
