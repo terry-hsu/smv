@@ -990,7 +990,6 @@ static int copy_mm(unsigned long clone_flags, struct task_struct *tsk)
 	if (clone_flags & CLONE_VM) {
 		atomic_inc(&oldmm->mm_users);
 		mm = oldmm;
-		/* TODO: Allocate a new pgd if it's an smv thread */
 		goto good_mm;
 	}
 

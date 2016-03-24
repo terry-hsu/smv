@@ -6,6 +6,8 @@
 #include <linux/sched.h>
 #include <linux/gfp.h>
 #include <asm/pgalloc.h>
+#include <asm/pgtable.h>
+#include <linux/smp.h>
 
 #define PGALLOC_GFP GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO
 
@@ -291,6 +293,7 @@ pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
     /* Init page table lock */
     spin_lock_init(&mm->page_table_lock_ribbon[ribbon_id]);
 
+    printk(KERN_INFO "[%s] ribbon %d pgd %p\n", __func__, ribbon_id, mm->pgd_ribbon[ribbon_id]);
     return pgd;
 }
 
@@ -300,25 +303,27 @@ void ribbon_free_pgd(struct mm_struct *mm, int ribbon_id){
 }
 
 /* Security context switch from one ribbon to another (change secure memory view) */
-void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk, struct mm_struct *next_mm){
+void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk, 
+                   struct mm_struct *prev_mm, struct mm_struct *next_mm){
 
-    /* 1. idle_task_exit() in core.c could pass NULL prev when taking a core offline.  
-     * 2. use_mm() in mmu_context.c could pass NULL when a kernel thread switching mm.
-       3. activate_mm() in mmu_context.h could pass NULL prev and next.
-       Skip ribbon context switch in these cases.
-     */
-    if( prev_tsk == NULL ) {
-        return;
-    }
+	unsigned long cpu = smp_processor_id();	
 
     /* Skip ribbon context switch if none of the tasks are in any ribbons */
-    if( prev_tsk->ribbon_id == -1 && next_tsk->ribbon_id == -1 ) {
+    if( (prev_tsk && prev_tsk->ribbon_id == -1) && 
+        (next_tsk && next_tsk->ribbon_id == -1) ) {
         return;
     }
 
-    /* Tell the kernel what page tables the ribbon will be using */
-//  next_mm->pgd = next_mm->pgd_ribbon[next_tsk->ribbon_id];
-//  next_mm->page_table_lock = next_mm->page_table_lock_ribbon[next_tsk->ribbon_id];
+	printk(KERN_INFO "[%s] -----------------------------\n", __func__);
+	if (prev_tsk && prev_tsk->ribbon_id != -1) {
+		printk(KERN_INFO "[%s] cpu: %lu prev ribbon %d switching out\n", __func__, cpu, prev_tsk->ribbon_id );
+	}
+	if (next_tsk && next_tsk->ribbon_id != -1) {
+		printk(KERN_INFO "[%s] cpu: %lu next ribbon %d switching in\n", __func__, cpu, next_tsk->ribbon_id );
+	}
+	printk(KERN_INFO "[%s] -----------------------------\n", __func__);
 
-    printk(KERN_INFO "[%s] prev ribbon %d switched to next ribbon %d\n", __func__, prev_tsk->ribbon_id, next_tsk->ribbon_id);       
+    /* Tell the kernel what page tables the ribbon will be using */
+    next_mm->pgd = next_mm->pgd_ribbon[next_tsk->ribbon_id];
+    next_mm->page_table_lock = next_mm->page_table_lock_ribbon[next_tsk->ribbon_id];
 }
