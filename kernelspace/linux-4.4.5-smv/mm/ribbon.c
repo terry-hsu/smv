@@ -303,7 +303,7 @@ pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
     }
 
     /* Allcoate pgd */
-	pgd = pgd_alloc(mm); // see implementation in pgtable.c
+  	pgd = pgd_alloc(mm); // see implementation in pgtable.c
     if( unlikely(!pgd) ) { 
         printk(KERN_ERR "[%s] failed to allocate new pgd.\n", __func__);
         return NULL;
@@ -330,9 +330,8 @@ void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk,
 
 	unsigned long cpu = smp_processor_id();	
 
-    /* Skip ribbon context switch if none of the tasks are in any ribbons */
-    if( (prev_tsk && prev_tsk->ribbon_id == -1) && 
-        (next_tsk && next_tsk->ribbon_id == -1) ) {
+    /* Skip ribbon context switch if the next tasks is not in any ribbons */
+    if( next_tsk && next_tsk->ribbon_id == -1 ) {
         return;
     }
 
@@ -340,9 +339,10 @@ void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk,
 	if (prev_tsk && prev_tsk->ribbon_id != -1) {
 		printk(KERN_INFO "[%s] cpu: %lu prev ribbon %d switching out\n", __func__, cpu, prev_tsk->ribbon_id );
 	}
-	if (next_tsk && next_tsk->ribbon_id != -1) {
-		printk(KERN_INFO "[%s] cpu: %lu next ribbon %d switching in\n", __func__, cpu, next_tsk->ribbon_id );
-	}
+
+    printk(KERN_INFO "[%s] cpu: %lu next ribbon %d switching in, pgd: %p\n", 
+            __func__, cpu, next_tsk->ribbon_id, next_mm->pgd_ribbon[next_tsk->ribbon_id] );
+	
 	printk(KERN_INFO "[%s] -----------------------------\n", __func__);
 
     /* Tell the kernel what page tables the ribbon will be using */

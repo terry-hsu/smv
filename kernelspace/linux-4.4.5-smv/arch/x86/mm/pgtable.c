@@ -361,7 +361,10 @@ pgd_t *pgd_alloc(struct mm_struct *mm)
 	if (pgd == NULL)
 		goto out;
 
-	mm->pgd = pgd;
+	/* Only assign pgd for normal threads */
+	if (mm->using_smv == 0) {
+		mm->pgd = pgd;
+	}
 
 	if (preallocate_pmds(mm, pmds) != 0)
 		goto out_free_pgd;
