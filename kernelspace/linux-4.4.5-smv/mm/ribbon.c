@@ -28,7 +28,7 @@ int ribbon_main_init(void){
     mm->using_smv = 1;
     mm->pgd_ribbon[MAIN_THREAD] = mm->pgd; // record the main thread's pgd
     mm->page_table_lock_ribbon[MAIN_THREAD] = mm->page_table_lock; // record the main thread's pgtable lock
-    current->ribbon_id = MAIN_THREAD;
+    current->ribbon_id = MAIN_THREAD;       // main thread is using MAIN_THREAD-th ribbon_id
     mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 }
@@ -156,6 +156,11 @@ int ribbon_join_memdom(int memdom_id, int ribbon_id){
     struct memdom_struct *memdom = NULL; 
     struct mm_struct *mm = current->mm;
 
+    if( ribbon_id >= MAX_RIBBON  || memdom_id >= MAX_MEMDOM) {
+        printk(KERN_ERR "[%s] Error, out of bound: ribbon %d, memdom %d\n", __func__, ribbon_id, memdom_id);
+        return -1;
+    }
+
     mutex_lock(&mm->smv_metadataMutex);
     ribbon = current->mm->ribbon_metadata[ribbon_id];
     memdom = current->mm->memdom_metadata[memdom_id];
@@ -179,6 +184,12 @@ EXPORT_SYMBOL(ribbon_join_memdom);
 int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
     struct memdom_struct *memdom = NULL;   
     struct ribbon_struct *ribbon = NULL;
+
+    if( ribbon_id >= MAX_RIBBON  || memdom_id >= MAX_MEMDOM) {
+        printk(KERN_ERR "[%s] Error, out of bound: ribbon %d, memdom %d\n", __func__, ribbon_id, memdom_id);
+        return -1;
+    }
+
     /* mm is not NULL is called by ribbon_kill() */
     if( mm == NULL ) {
         mm = current->mm;
@@ -217,6 +228,11 @@ int ribbon_is_in_memdom(int memdom_id, int ribbon_id){
     struct mm_struct *mm = current->mm;
     int in = 0;    
 
+    if( ribbon_id >= MAX_RIBBON  || memdom_id >= MAX_MEMDOM) {
+        printk(KERN_ERR "[%s] Error, out of bound: ribbon %d, memdom %d\n", __func__, ribbon_id, memdom_id);
+        return -1;
+    }
+
     mutex_lock(&mm->smv_metadataMutex);
     ribbon = current->mm->ribbon_metadata[ribbon_id];
     mutex_unlock(&mm->smv_metadataMutex);
@@ -243,6 +259,12 @@ EXPORT_SYMBOL(ribbon_get_ribbon_id);
 /* Put ribbon_id in mm struct for do_fork to use, return -1 if ribbon_id does not exist */
 int register_ribbon_thread(int ribbon_id){
     struct mm_struct *mm = current->mm;
+
+    if( ribbon_id >= MAX_RIBBON ) {
+        printk(KERN_ERR "[%s] Error, out of bound: ribbon %d\n", __func__, ribbon_id);
+        return -1;
+    }
+
     mutex_lock(&mm->smv_metadataMutex);
     if( !test_bit(ribbon_id, mm->ribbon_bitmapInUse) ) {
         printk(KERN_ERR "[%s] ribbon %d not found\n", __func__, ribbon_id);
@@ -276,13 +298,13 @@ pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
     pgd_t *pgd = NULL;
 
     if( !mm->using_smv ) {
-        printk(KERN_ERR "[%s] current mm is not using smv model.\n", __func__);
+        printk(KERN_ERR "[%s] Error: current mm is not using smv model.\n", __func__);
         return NULL;
     }
 
     /* Allcoate pgd */
-	pgd = (pgd_t *)__get_free_page(PGALLOC_GFP); // see implementation in pgtable.c
-    if( pgd == NULL ) { 
+	pgd = pgd_alloc(mm); // see implementation in pgtable.c
+    if( unlikely(!pgd) ) { 
         printk(KERN_ERR "[%s] failed to allocate new pgd.\n", __func__);
         return NULL;
     }
