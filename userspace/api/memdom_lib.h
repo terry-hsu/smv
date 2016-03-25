@@ -41,6 +41,9 @@ int memdom_priv_del(int memdom_id, int ribbon_id, unsigned long privs);
 /* Modify privilege of ribbon rib in memory domain memdom */
 int memdom_priv_mod(int memdom_id, int ribbon_id, unsigned long privs);
 
+/* Get the memdom id for global memory used by main thread */
+int memdom_main_id(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -53,5 +53,7 @@ int main(){
 
     // Try delete a non-existing ribbon
     ribbon_kill(12345);
+
+    printf("main memdom id: %d\n", memdom_main_id());
     return 0;
 }

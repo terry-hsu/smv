@@ -101,3 +101,17 @@ int memdom_priv_mod(int memdom_id, int ribbon_id, unsigned long privs){
     return rv;
 }
 
+
+ /* Get the memdom id for global memory used by main thread */
+int memdom_main_id(void){
+    int rv = 0;
+    char buf[100];
+    sprintf(buf, "memdom,mainid");
+    rv = message_to_kernel(buf);
+    if( rv == -1 ){
+        rlog("kernel responded error");
+        return -1;
+    }    
+    rlog("Global memdom id: %d\n", rv);    
+    return rv;
+}
