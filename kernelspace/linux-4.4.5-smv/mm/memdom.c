@@ -314,3 +314,32 @@ unsigned long memdom_free(unsigned long addr){
 }
 EXPORT_SYMBOL(memdom_free);
 
+/* Return the memdom id used by the master threadd (global memdom) */
+int memdom_main_id(void){
+    return MAIN_THREAD;
+}
+EXPORT_SYMBOL(memdom_main_id);
+
+/* Initialize vma's owner to the main thread, only called by the main thread */
+int memdom_claim_all_vmas(int memdom_id){
+    struct vm_area_struct *vma;
+    struct mm_struct *mm = current->mm;
+    int vma_count = 0;
+
+    /* If memdom_id == MAX_MEMDOM, it's the main thread claiming all vmas */
+    if( memdom_id > MAX_MEMDOM ) {
+        printk(KERN_ERR "[%s] Error, out of bound: memdom %d\n", __func__, memdom_id);
+        return -1;
+    }
+    
+   	down_write(&mm->mmap_sem);
+  	for (vma = mm->mmap; vma; vma = vma->vm_next) {
+        vma->memdom_id = MAX_MEMDOM;
+        vma_count++;
+    }
+   	up_write(&mm->mmap_sem);
+
+    printk(KERN_INFO "[%s] Initialize %d vmas to be in memdom %d\n", __func__, vma_count, memdom_id);
+    return 0;
+}
+

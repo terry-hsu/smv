@@ -359,6 +359,7 @@ struct vm_area_struct {
 	struct mempolicy *vm_policy;	/* NUMA policy for the VMA */
 #endif
 	struct vm_userfaultfd_ctx vm_userfaultfd_ctx;
+	int memdom_id; /* Record which memdom does this vma belong to */
 };
 
 struct core_thread {

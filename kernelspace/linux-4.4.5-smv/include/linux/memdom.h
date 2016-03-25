@@ -33,7 +33,7 @@
 #define MEMDOM_EXECUTE          0x00000004
 #define MEMDOM_ALLOCATE         0x00000008
 
-/* Memory domain struct metadata */
+/// Memdom struct metadata ///
 struct memdom_struct {
     int memdom_id;    
     struct mutex memdom_mutex;
@@ -43,14 +43,13 @@ struct memdom_struct {
     DECLARE_BITMAP(ribbon_bitmapAllocate, MAX_RIBBON); // Bitmap of ribbon.  Set to 1 if ribbon[i] can allocate data in this memdom, 0 otherwise.
 };
 
-/* Called by init/main.c */
-extern void memdom_init(void);
-
-/* SLAB cache for memdom_struct structure */
+/// --- Functions called by the kernel internally to manage memory space --- ///
 #define allocate_memdom()   (kmem_cache_alloc(memdom_cachep, GFP_KERNEL))
 #define free_memdom(memdom) (kmem_cache_free(memdom_cachep, memdom))
+extern void memdom_init(void);
+int memdom_claim_all_vmas(int memdom_id);
 
-/* Memoey domain functions */
+/// --- Functions exported to user space to manage metadata --- ///
 int memdom_create(void);
 void free_all_memdoms(struct mm_struct *mm);
 int memdom_kill(int memdom_id, struct mm_struct *mm);
@@ -59,6 +58,7 @@ int memdom_priv_del(int memdom_id, int ribbon_id, int privs);
 int memdom_priv_get(int memdom_id, int ribbon_id);
 unsigned long memdom_alloc(int memdom_id, unsigned long sz);
 unsigned long memdom_free(unsigned long addr);
+int memdom_main_id(void);
 
 #endif
 

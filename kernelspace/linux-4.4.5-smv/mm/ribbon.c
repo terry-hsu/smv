@@ -29,6 +29,7 @@ int ribbon_main_init(void){
     mm->pgd_ribbon[MAIN_THREAD] = mm->pgd; // record the main thread's pgd
     mm->page_table_lock_ribbon[MAIN_THREAD] = mm->page_table_lock; // record the main thread's pgtable lock
     current->ribbon_id = MAIN_THREAD;       // main thread is using MAIN_THREAD-th ribbon_id
+    memdom_claim_all_vmas(MAIN_THREAD);     // make all existing vma in memdom_id: MAIN_THREAD
     mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 }
@@ -349,3 +350,4 @@ void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk,
     next_mm->pgd = next_mm->pgd_ribbon[next_tsk->ribbon_id];
     next_mm->page_table_lock = next_mm->page_table_lock_ribbon[next_tsk->ribbon_id];
 }
+
