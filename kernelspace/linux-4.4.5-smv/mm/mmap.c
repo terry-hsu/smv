@@ -50,6 +50,8 @@
 
 #include "internal.h"
 
+#include <linux/smv_mm.h>
+
 #ifndef arch_mmap_check
 #define arch_mmap_check(addr, len, flags)	(0)
 #endif
@@ -1607,7 +1609,7 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
 	vma->vm_page_prot = vm_get_page_prot(vm_flags);
 	vma->vm_pgoff = pgoff;
 	INIT_LIST_HEAD(&vma->anon_vma_chain);
-    vma->memdom_id = MAX_MEMDOM; // make new vma the main thread's
+    vma->memdom_id = MAIN_THREAD; // make new vma the main thread's
 
 	if (file) {
 		if (vm_flags & VM_DENYWRITE) {
@@ -2495,7 +2497,7 @@ static int __split_vma(struct mm_struct *mm, struct vm_area_struct *vma,
 	else
 		err = vma_adjust(vma, vma->vm_start, addr, vma->vm_pgoff, new);
 
-	new->memdom_id = MAX_MEMDOM; // make new vma the main thread's
+	new->memdom_id = MAIN_THREAD; // make new vma the main thread's
 
 	/* Success. */
 	if (!err)
@@ -2813,7 +2815,7 @@ static unsigned long do_brk(unsigned long addr, unsigned long len)
 	vma->vm_pgoff = pgoff;
 	vma->vm_flags = flags;
 	vma->vm_page_prot = vm_get_page_prot(flags);
-	vma->memdom_id = MAX_MEMDOM; // make new vma the main thread's
+	vma->memdom_id = MAIN_THREAD; // make new vma the main thread's
 	vma_link(mm, vma, prev, rb_link, rb_parent);
 out:
 	perf_event_mmap(vma);
@@ -3096,7 +3098,7 @@ static struct vm_area_struct *__install_special_mapping(
 
 	vma->vm_ops = ops;
 	vma->vm_private_data = priv;
-	vma->memdom_id = MAX_MEMDOM; // make new vma the main thread's
+	vma->memdom_id = MAIN_THREAD; // make new vma the main thread's
 
 	ret = insert_vm_struct(mm, vma);
 	if (ret)

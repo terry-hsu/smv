@@ -27,15 +27,13 @@
 #include <linux/kernel.h>
 #include <linux/mutex.h>
 #include <linux/types.h>
-
-#define MAX_RIBBON 1024
-#define MAX_MEMDOM 1024
+#include <linux/smv_mm.h>
 
 /// Ribbons struct metadata ///
 struct ribbon_struct {
     int ribbon_id;
     atomic_t ntask;       // number of tasks running in this ribbon
-    DECLARE_BITMAP(memdom_bitmapJoin, MAX_MEMDOM); // Bitmap of memdoms.  set to 1 if this ribbon is in memdom[i], 0 otherwise.
+    DECLARE_BITMAP(memdom_bitmapJoin, SMV_ARRAY_SIZE); // Bitmap of memdoms.  set to 1 if this ribbon is in memdom[i], 0 otherwise.
     struct mutex ribbon_mutex;  // lock ribbon struct to prevent race condition   
 };
 

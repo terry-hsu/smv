@@ -20,16 +20,33 @@ static struct kmem_cache *ribbon_cachep;
 /* Telling the kernel that this process will be using the secure memory view model */
 int ribbon_main_init(void){
     struct mm_struct *mm = current->mm;
+    int ribbon_id = -1;
+    int memdom_id = -1;
+    struct ribbon_struct *ribbon = NULL;
+    struct memdom_struct *memdom = NULL;
+
     if( !mm ) {
         printk(KERN_ERR "[%s] current task does not have mm\n", __func__);
         return -1;
     }
+
+    /* Create a global ribbon and memdom with ID: MAIN_THREAD, and set up metadata */
+    ribbon_id = ribbon_create();
+    memdom_id = memdom_create();
+
+    /* Make the global ribbon join the global memdom*/
+    ribbon_join_memdom(memdom_id, ribbon_id);
+    
+    /* Initialize mm-related metadata */
     mutex_lock(&mm->smv_metadataMutex);
     mm->using_smv = 1;
     mm->pgd_ribbon[MAIN_THREAD] = mm->pgd; // record the main thread's pgd
     mm->page_table_lock_ribbon[MAIN_THREAD] = mm->page_table_lock; // record the main thread's pgtable lock
     current->ribbon_id = MAIN_THREAD;       // main thread is using MAIN_THREAD-th ribbon_id
-    memdom_claim_all_vmas(MAIN_THREAD);     // make all existing vma in memdom_id: MAIN_THREAD
+
+    /* make all existing vma in memdom_id: MAIN_THREAD */
+    memdom_claim_all_vmas(MAIN_THREAD);     
+
     mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 }
@@ -45,13 +62,13 @@ int ribbon_create(void){
     mutex_lock(&mm->smv_metadataMutex);
 
     /* Are we having too many ribbons? */
-    if( atomic_read(&mm->num_ribbons) == MAX_RIBBON ) {
+    if( atomic_read(&mm->num_ribbons) == SMV_ARRAY_SIZE ) {
         goto err;
     }
 
     /* Find available slot in the bitmap for the new ribbon */
-    ribbon_id = find_first_zero_bit(mm->ribbon_bitmapInUse, MAX_RIBBON);
-    if( ribbon_id == MAX_RIBBON ) {
+    ribbon_id = find_first_zero_bit(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE);
+    if( ribbon_id == SMV_ARRAY_SIZE ) {
         goto err;        
     }
 
@@ -59,7 +76,7 @@ int ribbon_create(void){
     ribbon = allocate_ribbon();
     ribbon->ribbon_id = ribbon_id;
     atomic_set(&ribbon->ntask, 0);
-    bitmap_zero(ribbon->memdom_bitmapJoin, MAX_MEMDOM);    
+    bitmap_zero(ribbon->memdom_bitmapJoin, SMV_ARRAY_SIZE);    
     mutex_init(&ribbon->ribbon_mutex);
 
     /* Record this new ribbon to mm */
@@ -75,7 +92,7 @@ int ribbon_create(void){
     atomic_inc(&mm->num_ribbons);
 
     printk(KERN_INFO "Created new ribbon with ID %d, #ribbons: %d / %d\n", 
-            ribbon_id, atomic_read(&mm->num_ribbons), MAX_RIBBON);
+            ribbon_id, atomic_read(&mm->num_ribbons), SMV_ARRAY_SIZE);
     goto out;
 
 err:
@@ -91,7 +108,8 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     struct ribbon_struct *ribbon = NULL; 
     int memdom_id = 0;
 
-    if( ribbon_id >= MAX_RIBBON ) {
+    /* Cannot kill global ribbon or ribbons with ID greater than LAST_RIBBON_INDEX */
+    if( ribbon_id > LAST_RIBBON_INDEX ) {
         printk(KERN_ERR "[%s] Error, out of bound: ribbon %d\n", __func__, ribbon_id);
         return -1;
     }
@@ -118,10 +136,10 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     }
 
     /* Clear all ribbon_bitmap(Read/Write/Execute/Allocate) bits for this ribbon in all memdoms */  
-    memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, MAX_MEMDOM);
-    while( memdom_id != MAX_MEMDOM ) {
+    memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, SMV_ARRAY_SIZE);
+    while( memdom_id != SMV_ARRAY_SIZE ) {
         ribbon_leave_memdom(memdom_id, ribbon_id, mm); 
-        memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, MAX_MEMDOM);
+        memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, SMV_ARRAY_SIZE);
     }
     
     /* Free the actual ribbon struct */
@@ -134,7 +152,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     atomic_dec(&mm->num_ribbons);
 
     printk(KERN_INFO "Deleted ribbon with ID %d, #ribbons: %d / %d\n", 
-            ribbon_id, atomic_read(&mm->num_ribbons), MAX_RIBBON);
+            ribbon_id, atomic_read(&mm->num_ribbons), SMV_ARRAY_SIZE);
 
     mutex_unlock(&mm->smv_metadataMutex);
     return 0;
@@ -145,7 +163,7 @@ EXPORT_SYMBOL(ribbon_kill);
 void free_all_ribbons(struct mm_struct *mm){
     int index = 0;
     while( atomic_read(&mm->num_ribbons) > 0 ){
-        index = find_first_bit(mm->ribbon_bitmapInUse, MAX_RIBBON);
+        index = find_first_bit(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE);
         printk(KERN_INFO "[%s] killing ribbon %d, remaining #ribbons: %d\n", __func__, index, atomic_read(&mm->num_ribbons));
         ribbon_kill(index, mm);
     }
@@ -157,7 +175,7 @@ int ribbon_join_memdom(int memdom_id, int ribbon_id){
     struct memdom_struct *memdom = NULL; 
     struct mm_struct *mm = current->mm;
 
-    if( ribbon_id >= MAX_RIBBON  || memdom_id >= MAX_MEMDOM) {
+    if( ribbon_id > LAST_RIBBON_INDEX  || memdom_id > LAST_MEMDOM_INDEX) {
         printk(KERN_ERR "[%s] Error, out of bound: ribbon %d, memdom %d\n", __func__, ribbon_id, memdom_id);
         return -1;
     }
@@ -186,7 +204,7 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
     struct memdom_struct *memdom = NULL;   
     struct ribbon_struct *ribbon = NULL;
 
-    if( ribbon_id >= MAX_RIBBON  || memdom_id >= MAX_MEMDOM) {
+    if( ribbon_id > LAST_RIBBON_INDEX  || memdom_id > LAST_MEMDOM_INDEX) {
         printk(KERN_ERR "[%s] Error, out of bound: ribbon %d, memdom %d\n", __func__, ribbon_id, memdom_id);
         return -1;
     }
@@ -229,9 +247,9 @@ int ribbon_is_in_memdom(int memdom_id, int ribbon_id){
     struct mm_struct *mm = current->mm;
     int in = 0;    
 
-    if( ribbon_id >= MAX_RIBBON  || memdom_id >= MAX_MEMDOM) {
+    if( ribbon_id > LAST_RIBBON_INDEX  || memdom_id > LAST_MEMDOM_INDEX) {
         printk(KERN_ERR "[%s] Error, out of bound: ribbon %d, memdom %d\n", __func__, ribbon_id, memdom_id);
-        return -1;
+        return 0;
     }
 
     mutex_lock(&mm->smv_metadataMutex);
@@ -261,19 +279,28 @@ EXPORT_SYMBOL(ribbon_get_ribbon_id);
 int register_ribbon_thread(int ribbon_id){
     struct mm_struct *mm = current->mm;
 
-    if( ribbon_id >= MAX_RIBBON ) {
+    /* A child ribbon cannot register itself to MAIN_THREAD or a non-existing ribbon */
+    if( ribbon_id == MAIN_THREAD || ribbon_id > LAST_RIBBON_INDEX ) {
         printk(KERN_ERR "[%s] Error, out of bound: ribbon %d\n", __func__, ribbon_id);
         return -1;
     }
 
+    /* Tell the kernel we are about to run a new thread in a ribbon */
     mutex_lock(&mm->smv_metadataMutex);
     if( !test_bit(ribbon_id, mm->ribbon_bitmapInUse) ) {
         printk(KERN_ERR "[%s] ribbon %d not found\n", __func__, ribbon_id);
         mutex_unlock(&mm->smv_metadataMutex);
         return -1;
     }
-    mm->standby_ribbon_id = ribbon_id;  // Will be reset to -1 when do_fork exits.
+    mm->standby_ribbon_id = ribbon_id;  // Will be reset to MAIN_THREAD when do_fork exits.
     mutex_unlock(&mm->smv_metadataMutex);
+
+    /* Update number of tasks running in the ribbon */
+    // TODO: Call atomic_dec when task exits the system
+    mutex_lock(&mm->ribbon_metadata[ribbon_id]->ribbon_mutex);
+    atomic_inc(&mm->ribbon_metadata[ribbon_id]->ntask); 
+    mutex_unlock(&mm->ribbon_metadata[ribbon_id]->ribbon_mutex);
+
     return 0;
 }
 EXPORT_SYMBOL(register_ribbon_thread);

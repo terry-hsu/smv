@@ -14,10 +14,9 @@
 #include <linux/page-flags-layout.h>
 #include <asm/page.h>
 #include <asm/mmu.h>
+#include <linux/smv_mm.h>
 #include <linux/ribbon.h>
 #include <linux/memdom.h>
-
-#define MAIN_THREAD MAX_RIBBON
 
 #ifndef AT_VECTOR_SIZE_ARCH
 #define AT_VECTOR_SIZE_ARCH 0
@@ -398,10 +397,10 @@ struct mm_struct {
 	/* Additional fields to support the secure memory view model */
     atomic_t num_ribbons;	/* number of ribbons the current process has */
 	atomic_t num_memdoms;	/* number of memdoms the current process has */
-	DECLARE_BITMAP(memdom_bitmapInUse, MAX_MEMDOM); /* Bitmap of memdoms in use.  set to 1 if memdom[i] is in use, 0 otherwise. */
-    DECLARE_BITMAP(ribbon_bitmapInUse, MAX_RIBBON); /* Bitmap of ribbons in use.  set to 1 if ribbon[i] is in use, 0 otherwise. */
-	struct memdom_struct *memdom_metadata[MAX_MEMDOM];	/* Bookkeeping of per-process memory domains info */
-	struct ribbon_struct *ribbon_metadata[MAX_RIBBON];	/* Bookkeeping of per-process ribbons info */
+	DECLARE_BITMAP(memdom_bitmapInUse, SMV_ARRAY_SIZE); /* Bitmap of memdoms in use.  set to 1 if memdom[i] is in use, 0 otherwise. */
+    DECLARE_BITMAP(ribbon_bitmapInUse, SMV_ARRAY_SIZE); /* Bitmap of ribbons in use.  set to 1 if ribbon[i] is in use, 0 otherwise. */
+	struct memdom_struct *memdom_metadata[SMV_ARRAY_SIZE];	/* Bookkeeping of per-process memory domains info */
+	struct ribbon_struct *ribbon_metadata[SMV_ARRAY_SIZE];	/* Bookkeeping of per-process ribbons info */
 	struct mutex smv_metadataMutex;	/* mutex protecting memdom/ribbon_metadata and memdom/ribbon_bitmap */
 	int using_smv;	/* set to 1 if current mm is using the secure memory view model */
 	int standby_ribbon_id; /* For smv_thread_create to tell the kernel what ribbon an about-to-run thread will be running in */
@@ -419,7 +418,7 @@ struct mm_struct {
 	unsigned long task_size;		/* size of task vm space */
 	unsigned long highest_vm_end;		/* highest vma end address */
 	pgd_t *pgd;   /* Page table used by ribbon threads.  Index at MAX_RIBBON-th pgd is for main thread */
-	pgd_t *pgd_ribbon[MAX_RIBBON+1];   /* Page table used by ribbon threads.  Index at MAX_RIBBON-th pgd is for main thread */
+	pgd_t *pgd_ribbon[SMV_ARRAY_SIZE];   /* Page table used by ribbon threads.  Index at MAX_RIBBON-th pgd is for main thread */
 	atomic_t mm_users;			/* How many users with user space? */
 	atomic_t mm_count;			/* How many references to "struct mm_struct" (users count as 1) */
 	atomic_long_t nr_ptes;			/* PTE page table pages */
@@ -429,7 +428,7 @@ struct mm_struct {
 	int map_count;				/* number of VMAs */
 
 	spinlock_t page_table_lock;		/* Protects page tables and some counters */
-	spinlock_t page_table_lock_ribbon[MAX_RIBBON+1];		/* Protects page tables and some counters for ribbons. Index at MAX_RIBBON-th pgd is for main thread  */
+	spinlock_t page_table_lock_ribbon[SMV_ARRAY_SIZE];		/* Protects page tables and some counters for ribbons. Index at MAX_RIBBON-th pgd is for main thread  */
 
 	struct rw_semaphore mmap_sem;
 

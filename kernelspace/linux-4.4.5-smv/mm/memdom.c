@@ -32,23 +32,23 @@ int memdom_create(void){
     mutex_lock(&mm->smv_metadataMutex);
 
     /* Are we having too many memdoms? */
-    if( atomic_read(&mm->num_memdoms) == MAX_MEMDOM ) {
+    if( atomic_read(&mm->num_memdoms) == SMV_ARRAY_SIZE ) {
         goto err;
     }
 
     /* Find available slot in the bitmap for the new ribbon */
-    memdom_id = find_first_zero_bit(mm->memdom_bitmapInUse, MAX_MEMDOM);
-    if( memdom_id == MAX_MEMDOM ) {
+    memdom_id = find_first_zero_bit(mm->memdom_bitmapInUse, SMV_ARRAY_SIZE);
+    if( memdom_id == SMV_ARRAY_SIZE ) {
         goto err;        
     }
 
     /* Create the actual memdom struct */
     memdom = allocate_memdom();
     memdom->memdom_id = memdom_id;
-    bitmap_zero(memdom->ribbon_bitmapRead, MAX_RIBBON);    
-    bitmap_zero(memdom->ribbon_bitmapWrite, MAX_RIBBON);    
-    bitmap_zero(memdom->ribbon_bitmapExecute, MAX_RIBBON);    
-    bitmap_zero(memdom->ribbon_bitmapAllocate, MAX_RIBBON);    
+    bitmap_zero(memdom->ribbon_bitmapRead, SMV_ARRAY_SIZE);    
+    bitmap_zero(memdom->ribbon_bitmapWrite, SMV_ARRAY_SIZE);    
+    bitmap_zero(memdom->ribbon_bitmapExecute, SMV_ARRAY_SIZE);    
+    bitmap_zero(memdom->ribbon_bitmapAllocate, SMV_ARRAY_SIZE);    
     mutex_init(&memdom->memdom_mutex);
 
     /* Record this new memdom to mm */
@@ -61,7 +61,7 @@ int memdom_create(void){
     atomic_inc(&mm->num_memdoms);
 
     printk(KERN_INFO "Created new memdom with ID %d, #memdom: %d / %d\n", 
-            memdom_id, atomic_read(&mm->num_memdoms), MAX_MEMDOM);
+            memdom_id, atomic_read(&mm->num_memdoms), SMV_ARRAY_SIZE);
     goto out;
 
 err:
@@ -78,25 +78,25 @@ int find_first_ribbon(struct memdom_struct *memdom){
     int ribbon_id = 0;
 
     /* Check read permission */
-    ribbon_id = find_first_bit(memdom->ribbon_bitmapRead, MAX_RIBBON);
-    if( ribbon_id != MAX_RIBBON ) {
+    ribbon_id = find_first_bit(memdom->ribbon_bitmapRead, SMV_ARRAY_SIZE);
+    if( ribbon_id != SMV_ARRAY_SIZE ) {
         return ribbon_id;
     }
 
     /* Check write permission */
-    ribbon_id = find_first_bit(memdom->ribbon_bitmapWrite, MAX_RIBBON);
-    if( ribbon_id != MAX_RIBBON ) {
+    ribbon_id = find_first_bit(memdom->ribbon_bitmapWrite, SMV_ARRAY_SIZE);
+    if( ribbon_id != SMV_ARRAY_SIZE ) {
         return ribbon_id;
     }
 
     /* Check allocate permission */
-    ribbon_id = find_first_bit(memdom->ribbon_bitmapAllocate, MAX_RIBBON);
-    if( ribbon_id != MAX_RIBBON ) {
+    ribbon_id = find_first_bit(memdom->ribbon_bitmapAllocate, SMV_ARRAY_SIZE);
+    if( ribbon_id != SMV_ARRAY_SIZE ) {
         return ribbon_id;
     }
 
     /* Check execute permission */
-    ribbon_id = find_first_bit(memdom->ribbon_bitmapExecute, MAX_RIBBON);
+    ribbon_id = find_first_bit(memdom->ribbon_bitmapExecute, SMV_ARRAY_SIZE);
 
     return ribbon_id;
 }
@@ -106,7 +106,7 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     struct memdom_struct *memdom = NULL;
     int ribbon_id = 0;
 
-    if( memdom_id >= MAX_MEMDOM ) {
+    if( memdom_id > LAST_MEMDOM_INDEX ) {
         printk(KERN_ERR "[%s] Error, out of bound: memdom %d\n", __func__, memdom_id);
         return -1;
     }
@@ -134,7 +134,7 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
 
     /* Clear all ribbon_bitmapR/W/E/A bits for this memdom in all ribbons */    
     ribbon_id = find_first_ribbon(memdom);
-    while( ribbon_id != MAX_RIBBON ) {
+    while( ribbon_id != SMV_ARRAY_SIZE ) {
         ribbon_leave_memdom(memdom_id, ribbon_id, mm); 
         ribbon_id = find_first_ribbon(memdom);
     }   
@@ -147,7 +147,7 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     atomic_dec(&mm->num_memdoms);
 
     printk(KERN_INFO "Deleted memdom with ID %d, #memdoms: %d / %d\n", 
-            memdom_id, atomic_read(&mm->num_memdoms), MAX_MEMDOM);
+            memdom_id, atomic_read(&mm->num_memdoms), SMV_ARRAY_SIZE);
 
     mutex_unlock(&mm->smv_metadataMutex);
     return 0;
@@ -159,7 +159,7 @@ EXPORT_SYMBOL(memdom_kill);
 void free_all_memdoms(struct mm_struct *mm){
     int index = 0;
     while( atomic_read(&mm->num_memdoms) > 0 ){
-        index = find_first_bit(mm->memdom_bitmapInUse, MAX_MEMDOM);
+        index = find_first_bit(mm->memdom_bitmapInUse, SMV_ARRAY_SIZE);
         printk(KERN_INFO "[%s] killing memdom %d, remaining #memdom: %d\n", __func__, index, atomic_read(&mm->num_memdoms));
         memdom_kill(index, mm);
     }
@@ -170,6 +170,11 @@ int memdom_priv_add(int memdom_id, int ribbon_id, int privs){
     struct ribbon_struct *ribbon; 
     struct memdom_struct *memdom; 
     struct mm_struct *mm = current->mm;
+
+    if( ribbon_id > LAST_RIBBON_INDEX || memdom_id > LAST_MEMDOM_INDEX ) {
+        printk(KERN_ERR "[%s] Error, out of bound: ribbon %d / memdom %d\n", __func__, ribbon_id, memdom_id);
+        return -1;
+    }
 
     mutex_lock(&mm->smv_metadataMutex);
     ribbon = current->mm->ribbon_metadata[ribbon_id];
@@ -217,6 +222,11 @@ int memdom_priv_del(int memdom_id, int ribbon_id, int privs){
     struct memdom_struct *memdom = NULL;
     struct mm_struct *mm = current->mm;
 
+    if( ribbon_id > LAST_RIBBON_INDEX || memdom_id > LAST_MEMDOM_INDEX ) {
+        printk(KERN_ERR "[%s] Error, out of bound: ribbon %d / memdom %d\n", __func__, ribbon_id, memdom_id);
+        return -1;
+    }
+
     mutex_lock(&mm->smv_metadataMutex);
     ribbon = current->mm->ribbon_metadata[ribbon_id];
     memdom = current->mm->memdom_metadata[memdom_id];
@@ -263,6 +273,11 @@ int memdom_priv_get(int memdom_id, int ribbon_id){
     struct memdom_struct *memdom = NULL;
     struct mm_struct *mm = current->mm;
     int privs = 0;
+
+    if( ribbon_id > LAST_RIBBON_INDEX || memdom_id > LAST_MEMDOM_INDEX ) {
+        printk(KERN_ERR "[%s] Error, out of bound: ribbon %d / memdom %d\n", __func__, ribbon_id, memdom_id);
+        return -1;
+    }
 
     mutex_lock(&mm->smv_metadataMutex);
     ribbon = current->mm->ribbon_metadata[ribbon_id];
@@ -326,15 +341,14 @@ int memdom_claim_all_vmas(int memdom_id){
     struct mm_struct *mm = current->mm;
     int vma_count = 0;
 
-    /* If memdom_id == MAX_MEMDOM, it's the main thread claiming all vmas */
-    if( memdom_id > MAX_MEMDOM ) {
+    if( memdom_id > LAST_MEMDOM_INDEX ) {
         printk(KERN_ERR "[%s] Error, out of bound: memdom %d\n", __func__, memdom_id);
         return -1;
     }
     
    	down_write(&mm->mmap_sem);
   	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-        vma->memdom_id = MAX_MEMDOM;
+        vma->memdom_id = MAIN_THREAD;
         vma_count++;
     }
    	up_write(&mm->mmap_sem);
