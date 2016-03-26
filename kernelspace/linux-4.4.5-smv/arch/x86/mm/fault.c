@@ -25,6 +25,9 @@
 #define CREATE_TRACE_POINTS
 #include <asm/trace/exceptions.h>
 
+#include <linux/smv_mm.h>
+
+#ifndef _LINUX_SMV_H
 /*
  * Page fault error code bits:
  *
@@ -42,6 +45,7 @@ enum x86_pf_error_code {
 	PF_RSVD		=		1 << 3,
 	PF_INSTR	=		1 << 4,
 };
+#endif
 
 /*
  * Returns 0 if mmiotrace is disabled, or if the fault is not
@@ -1053,7 +1057,7 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
 }
 
 /* For debugging: prints out the information about this page fault*/
-static noinline void fault_info(unsigned long error_code, unsigned long addr, struct vm_area_struct *vma){
+static noinline void fault_info(unsigned long addr, struct vm_area_struct *vma, unsigned long error_code){
 	struct task_struct *tsk = current;
     int prot_code = error_code & PF_PROT;
     int write_code = error_code & PF_WRITE;
@@ -1062,7 +1066,7 @@ static noinline void fault_info(unsigned long error_code, unsigned long addr, st
     int instr_code = error_code & PF_INSTR; 
     unsigned long page_aligned_addr = addr & PAGE_MASK;
 
-	if (!vma) {
+	if ((!vma) || (!current->mm->using_smv)) {
 		return;
 	}
 
@@ -1218,11 +1222,7 @@ retry:
 		might_sleep();
 	}
 
-	vma = find_vma(mm, address);
-	if (mm->using_smv) {
-		fault_info(error_code, address, vma);
-	}
-
+	vma = find_vma(mm, address);	
 	if (unlikely(!vma)) {
 		bad_area(regs, error_code, address);
 		return;
@@ -1256,6 +1256,14 @@ retry:
 	 */
 good_area:
 	if (unlikely(access_error(error_code, vma))) {
+		bad_area_access_error(regs, error_code, address);
+		return;
+	}
+
+	/* SMV related checking, terminate a process if it issus smv invalid page fault */
+	fault_info(address, vma, error_code);
+	if ( !smv_valid_fault(tsk->ribbon_id, vma, error_code) ){
+		printk(KERN_INFO "[%s] ribbon %d issued smv invalid fault, KILL this process\n", __func__, tsk->ribbon_id);
 		bad_area_access_error(regs, error_code, address);
 		return;
 	}
