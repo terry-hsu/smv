@@ -22,13 +22,14 @@ int ribbon_main_init(void){
     struct mm_struct *mm = current->mm;
     int ribbon_id = -1;
     int memdom_id = -1;
-    struct ribbon_struct *ribbon = NULL;
-    struct memdom_struct *memdom = NULL;
 
     if( !mm ) {
         printk(KERN_ERR "[%s] current task does not have mm\n", __func__);
         return -1;
     }
+
+    /* Mark this mm descriptor as using smv */
+    mm->using_smv = 1;
 
     /* Create a global ribbon and memdom with ID: MAIN_THREAD, and set up metadata */
     ribbon_id = ribbon_create();
@@ -39,7 +40,6 @@ int ribbon_main_init(void){
     
     /* Initialize mm-related metadata */
     mutex_lock(&mm->smv_metadataMutex);
-    mm->using_smv = 1;
     mm->pgd_ribbon[MAIN_THREAD] = mm->pgd; // record the main thread's pgd
     mm->page_table_lock_ribbon[MAIN_THREAD] = mm->page_table_lock; // record the main thread's pgtable lock
     current->ribbon_id = MAIN_THREAD;       // main thread is using MAIN_THREAD-th ribbon_id
@@ -129,6 +129,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     /* Clear ribbon_id-th bit in mm's ribbon_bitmapInUse */
     if( test_bit(ribbon_id, mm->ribbon_bitmapInUse) ) {
         clear_bit(ribbon_id, mm->ribbon_bitmapInUse);  
+        mutex_unlock(&mm->smv_metadataMutex);
     } else {
         printk(KERN_ERR "Error, trying to delete a ribbon that does not exist: ribbon %d, #ribbons: %d\n", ribbon_id, atomic_read(&mm->num_ribbons));
         mutex_unlock(&mm->smv_metadataMutex);
@@ -136,11 +137,14 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     }
 
     /* Clear all ribbon_bitmap(Read/Write/Execute/Allocate) bits for this ribbon in all memdoms */  
-    memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, SMV_ARRAY_SIZE);
-    while( memdom_id != SMV_ARRAY_SIZE ) {
-        ribbon_leave_memdom(memdom_id, ribbon_id, mm); 
+    do {       
+        mutex_lock(&ribbon->ribbon_mutex);
         memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, SMV_ARRAY_SIZE);
-    }
+        mutex_unlock(&ribbon->ribbon_mutex);
+        if( memdom_id != SMV_ARRAY_SIZE ) {
+            ribbon_leave_memdom(memdom_id, ribbon_id, mm);
+        }
+    } while( memdom_id != SMV_ARRAY_SIZE );
     
     /* Free the actual ribbon struct */
     free_ribbon(ribbon);
@@ -149,12 +153,13 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     /* TODO: Free page tables */
 
     /* Decrement ribbon count */
+    mutex_lock(&mm->smv_metadataMutex);
     atomic_dec(&mm->num_ribbons);
+    mutex_unlock(&mm->smv_metadataMutex);
 
     printk(KERN_INFO "Deleted ribbon with ID %d, #ribbons: %d / %d\n", 
             ribbon_id, atomic_read(&mm->num_ribbons), SMV_ARRAY_SIZE);
 
-    mutex_unlock(&mm->smv_metadataMutex);
     return 0;
 }
 EXPORT_SYMBOL(ribbon_kill);

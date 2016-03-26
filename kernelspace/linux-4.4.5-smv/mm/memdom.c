@@ -77,27 +77,31 @@ EXPORT_SYMBOL(memdom_create);
 int find_first_ribbon(struct memdom_struct *memdom){
     int ribbon_id = 0;
 
+    mutex_lock(&memdom->memdom_mutex);
+
     /* Check read permission */
     ribbon_id = find_first_bit(memdom->ribbon_bitmapRead, SMV_ARRAY_SIZE);
     if( ribbon_id != SMV_ARRAY_SIZE ) {
-        return ribbon_id;
+        goto out;
     }
 
     /* Check write permission */
     ribbon_id = find_first_bit(memdom->ribbon_bitmapWrite, SMV_ARRAY_SIZE);
     if( ribbon_id != SMV_ARRAY_SIZE ) {
-        return ribbon_id;
+        goto out;
     }
 
     /* Check allocate permission */
     ribbon_id = find_first_bit(memdom->ribbon_bitmapAllocate, SMV_ARRAY_SIZE);
     if( ribbon_id != SMV_ARRAY_SIZE ) {
-        return ribbon_id;
+        goto out;
     }
 
     /* Check execute permission */
     ribbon_id = find_first_bit(memdom->ribbon_bitmapExecute, SMV_ARRAY_SIZE);
 
+out:
+    mutex_unlock(&memdom->memdom_mutex);
     return ribbon_id;
 }
 
@@ -126,6 +130,7 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     /* Clear memdom_id-th bit in memdom_bitmapInUse */
     if( test_bit(memdom_id, mm->memdom_bitmapInUse) ) {
         clear_bit(memdom_id, mm->memdom_bitmapInUse);  
+        mutex_unlock(&mm->smv_metadataMutex);
     } else {
         printk(KERN_ERR "Error, trying to delete a memdom that does not exist: memdom %d, #memdoms: %d\n", memdom_id, atomic_read(&mm->num_memdoms));
         mutex_unlock(&mm->smv_metadataMutex);
@@ -133,25 +138,26 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     }
 
     /* Clear all ribbon_bitmapR/W/E/A bits for this memdom in all ribbons */    
-    ribbon_id = find_first_ribbon(memdom);
-    while( ribbon_id != SMV_ARRAY_SIZE ) {
-        ribbon_leave_memdom(memdom_id, ribbon_id, mm); 
+    do {
         ribbon_id = find_first_ribbon(memdom);
-    }   
-
+        if( ribbon_id != SMV_ARRAY_SIZE ) {
+            ribbon_leave_memdom(memdom_id, ribbon_id, mm);             
+        }
+    } while( ribbon_id != SMV_ARRAY_SIZE );
+    
     /* Free the actual memdom struct */
     free_memdom(memdom);
     mm->memdom_metadata[memdom_id] = NULL;
 
     /* Decrement memdom count */
+    mutex_lock(&mm->smv_metadataMutex);
     atomic_dec(&mm->num_memdoms);
+    mutex_unlock(&mm->smv_metadataMutex);
 
     printk(KERN_INFO "Deleted memdom with ID %d, #memdoms: %d / %d\n", 
             memdom_id, atomic_read(&mm->num_memdoms), SMV_ARRAY_SIZE);
 
-    mutex_unlock(&mm->smv_metadataMutex);
     return 0;
-
 }
 EXPORT_SYMBOL(memdom_kill);
 
@@ -353,7 +359,7 @@ int memdom_claim_all_vmas(int memdom_id){
     }
    	up_write(&mm->mmap_sem);
 
-    printk(KERN_INFO "[%s] Initialize %d vmas to be in memdom %d\n", __func__, vma_count, memdom_id);
+    printk(KERN_INFO "[%s] Initialized %d vmas to be in memdom %d\n", __func__, vma_count, memdom_id);
     return 0;
 }
 
