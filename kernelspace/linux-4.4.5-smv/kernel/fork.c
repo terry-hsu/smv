@@ -599,7 +599,7 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
 	memset(mm->memdom_metadata, 0, sizeof(struct memdom_struct*) * SMV_ARRAY_SIZE); /* If the first element is NULL, then no memdom is created yet */
 	memset(mm->pgd_ribbon, 0, sizeof(pgd_t) * SMV_ARRAY_SIZE);	
 	mm->using_smv = 0;
-	mm->standby_ribbon_id = MAIN_THREAD;
+	mm->standby_ribbon_id = -1;
 
 	mm->mmap = NULL;
 	mm->mm_rb = RB_ROOT;
@@ -1434,9 +1434,9 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 
 	/* Get ribbon_id if any stored in mm */
 	if (current->mm) {
-		p->ribbon_id = current->mm->standby_ribbon_id; // Could be MAIN_THREAD if it's not ribbon thread
+		p->ribbon_id = current->mm->standby_ribbon_id; // Could be -1 if it's not ribbon thread
 	} else {
-		p->ribbon_id = MAIN_THREAD;
+		p->ribbon_id = -1;
 	}
 
 	/* Perform scheduler related setup. Assign this task to a CPU. */
@@ -1786,10 +1786,10 @@ long _do_fork(unsigned long clone_flags,
 	 * User space guarantees the atomic operation of forking ribbon threads 
 	 */
 	if (current->mm) {
-		if ( current->mm->standby_ribbon_id != MAIN_THREAD ) {
+		if ( current->mm->standby_ribbon_id != -1 ) {
 			printk(KERN_INFO "[%s] forked ribbon thread running in ribbon %d\n", __func__, current->mm->standby_ribbon_id);
   			p->ribbon_id = current->mm->standby_ribbon_id;
-			current->mm->standby_ribbon_id = MAIN_THREAD;
+			current->mm->standby_ribbon_id = -1;
 		}
 	}
 

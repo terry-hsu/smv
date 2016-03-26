@@ -8,8 +8,11 @@ int smv_valid_fault(int ribbon_id, struct vm_area_struct *vma, unsigned long err
     int memdom_id = vma->memdom_id;
     struct mm_struct *mm = current->mm;
     
-    /* Skip checking for smv valid fault if current task is not using smv */
-    if ( mm->using_smv ) {
+    /* Skip checking for smv valid fault if 
+     * 1. current task is not using smv 
+     * 2. current task is using smv, but page fault triggered by Pthreads (ribbon_id == -1) 
+     */
+    if ( !mm->using_smv || (mm->using_smv && current->ribbon_id == -1) ) {
          return 1;
     }
 
