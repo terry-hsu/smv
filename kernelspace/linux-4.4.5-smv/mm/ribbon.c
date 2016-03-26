@@ -146,12 +146,15 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
         }
     } while( memdom_id != SMV_ARRAY_SIZE );
     
+    /* TODO: Free all page tables (not just pgd). ribbon_id 0 is using process's original pgd. Will be freed in fork.c */
+    if (ribbon_id != 0) {
+        pgd_free(mm, mm->pgd_ribbon[ribbon_id]);
+    }
+    
     /* Free the actual ribbon struct */
     free_ribbon(ribbon);
     mm->ribbon_metadata[ribbon_id] = NULL;
-
-    /* TODO: Free page tables */
-
+    
     /* Decrement ribbon count */
     mutex_lock(&mm->smv_metadataMutex);
     atomic_dec(&mm->num_ribbons);
@@ -335,18 +338,22 @@ pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
         return NULL;
     }
 
-    /* Allcoate pgd */
-  	pgd = pgd_alloc(mm); // see implementation in pgtable.c
-    if( unlikely(!pgd) ) { 
-        printk(KERN_ERR "[%s] failed to allocate new pgd.\n", __func__);
-        return NULL;
+    /* Allcoate pgd. MAIN_THREAD with ribbon id 0 already has pgd, just record it */
+    if( ribbon_id == 0 ) {    
+        pgd = mm->pgd;
+        mm->page_table_lock_ribbon[ribbon_id] = mm->page_table_lock;
+    } else {
+        pgd = pgd_alloc(mm); // see implementation in pgtable.c
+        if( unlikely(!pgd) ) { 
+            printk(KERN_ERR "[%s] failed to allocate new pgd.\n", __func__);
+            return NULL;
+        }
+        /* Init page table lock */
+        spin_lock_init(&mm->page_table_lock_ribbon[ribbon_id]);
     }
 
-    /* Assign to mm_struct for ribbon_id */
+    /* Assign page table directory to mm_struct for ribbon_id */
     mm->pgd_ribbon[ribbon_id] = pgd;
-
-    /* Init page table lock */
-    spin_lock_init(&mm->page_table_lock_ribbon[ribbon_id]);
 
     printk(KERN_INFO "[%s] ribbon %d pgd %p\n", __func__, ribbon_id, mm->pgd_ribbon[ribbon_id]);
     return pgd;
