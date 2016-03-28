@@ -1223,6 +1223,7 @@ retry:
 	}
 
 	vma = find_vma(mm, address);	
+	fault_info(address, vma, error_code);
 	if (unlikely(!vma)) {
 		bad_area(regs, error_code, address);
 		return;
@@ -1261,7 +1262,6 @@ good_area:
 	}
 
 	/* SMV related checking, terminate a process if it issus smv invalid page fault */
-	fault_info(address, vma, error_code);
 	if ( !smv_valid_fault(tsk->ribbon_id, vma, error_code) ){
 		printk(KERN_INFO "[%s] ribbon %d issued smv invalid fault, KILL this process\n", __func__, tsk->ribbon_id);
 		bad_area_access_error(regs, error_code, address);
