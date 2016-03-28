@@ -44,6 +44,7 @@ extern void ribbon_init(void);      /* Called by init/main.c */
 pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id);
 void ribbon_free_pgd(struct mm_struct *mm, int ribbon_id);
 void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk, struct mm_struct *prev_mm, struct mm_struct *next_mm);
+void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id);
 
 /// --- Functions exported to user space to manage metadata --- ///
 int ribbon_main_init(void);

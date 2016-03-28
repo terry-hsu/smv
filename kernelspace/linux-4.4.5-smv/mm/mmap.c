@@ -2849,6 +2849,9 @@ void exit_mmap(struct mm_struct *mm)
 	struct vm_area_struct *vma;
 	unsigned long nr_accounted = 0;
 
+	if (mm->using_smv) {
+		printk(KERN_INFO "[%s] %s in ribbon %d mm: %p\n", __func__, current->comm, current->ribbon_id, mm);
+	}
 	/* mm's last user has gone, and its about to be pulled down */
 	mmu_notifier_release(mm);
 
@@ -2870,10 +2873,16 @@ void exit_mmap(struct mm_struct *mm)
 	lru_add_drain();
 	flush_cache_mm(mm);
 	tlb_gather_mmu(&tlb, mm, 0, -1);
+
+	if (mm->using_smv) {
+		free_all_ribbons(mm);   /* Free ribbons and their mm */
+		free_all_memdoms(mm);   /* Free memdoms */
+		tlb.ribbon_id = 0; 		/* Set ribbon id in tlb for unmap_vmas and free_pgtables to use */
+	}
+
 	/* update_hiwater_rss(mm) here? but nobody should be looking */
 	/* Use -1 here to ensure all VMAs in the mm are unmapped */
 	unmap_vmas(&tlb, vma, 0, -1);
-
 	free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);
 	tlb_finish_mmu(&tlb, 0, -1);
 

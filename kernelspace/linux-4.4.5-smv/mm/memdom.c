@@ -154,8 +154,8 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     atomic_dec(&mm->num_memdoms);
     mutex_unlock(&mm->smv_metadataMutex);
 
-    printk(KERN_INFO "Deleted memdom with ID %d, #memdoms: %d / %d\n", 
-            memdom_id, atomic_read(&mm->num_memdoms), SMV_ARRAY_SIZE);
+    printk(KERN_INFO "[%s] Deleted memdom with ID %d, #memdoms: %d / %d\n", 
+            __func__, memdom_id, atomic_read(&mm->num_memdoms), SMV_ARRAY_SIZE);
 
     return 0;
 }

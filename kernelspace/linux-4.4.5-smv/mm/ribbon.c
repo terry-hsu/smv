@@ -8,6 +8,8 @@
 #include <asm/pgalloc.h>
 #include <asm/pgtable.h>
 #include <linux/smp.h>
+#include <linux/mm.h>
+#include <asm-generic/tlb.h>
 
 #define PGALLOC_GFP GFP_KERNEL | __GFP_NOTRACK | __GFP_REPEAT | __GFP_ZERO
 
@@ -27,7 +29,7 @@ int ribbon_main_init(void){
         printk(KERN_ERR "[%s] current task does not have mm\n", __func__);
         return -1;
     }
-
+    printk(KERN_INFO "[%s] ------------------ %s pid %d ------------------\n", __func__, current->comm, current->pid);
     /* Mark this mm descriptor as using smv */
     mm->using_smv = 1;
 
@@ -61,6 +63,8 @@ int ribbon_create(void){
     /* SMP: protect shared ribbon bitmap */
     mutex_lock(&mm->smv_metadataMutex);
 
+    printk(KERN_INFO "[%s] Before ribbon_create mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
+            __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
     /* Are we having too many ribbons? */
     if( atomic_read(&mm->num_ribbons) == SMV_ARRAY_SIZE ) {
         goto err;
@@ -99,6 +103,9 @@ err:
     printk(KERN_ERR "Too many ribbons, cannot create more.\n");
     ribbon_id = -1;
 out:
+    printk(KERN_INFO "[%s] After ribbon_create mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
+            __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
+
     mutex_unlock(&mm->smv_metadataMutex);
     return ribbon_id;
 }
@@ -117,13 +124,14 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     /* When user space program calls ribbon_kill, mm_struct is NULL
      * If free_all_ribbons calls this function, it passes the about-to-destroy mm_struct, not current->mm */
     if( !mm ) {
-        mm = current->mm;
+        mm = current->mm;        
     }
 
     /* SMP: protect shared ribbon bitmap */
     mutex_lock(&mm->smv_metadataMutex);
     ribbon = mm->ribbon_metadata[ribbon_id]; 
 
+    printk(KERN_INFO "[%s] killing ribbon metadata %p with ID %d\n", __func__, ribbon, ribbon_id);
     /* TODO: check if current task has the permission to delete the ribbon, only master thread can do this */
     
     /* Clear ribbon_id-th bit in mm's ribbon_bitmapInUse */
@@ -137,6 +145,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     }
 
     /* Clear all ribbon_bitmap(Read/Write/Execute/Allocate) bits for this ribbon in all memdoms */  
+    printk(KERN_INFO "[%s] leaving all the joined memdoms\n", __func__);
     do {       
         mutex_lock(&ribbon->ribbon_mutex);
         memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, SMV_ARRAY_SIZE);
@@ -146,9 +155,12 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
         }
     } while( memdom_id != SMV_ARRAY_SIZE );
     
-    /* TODO: Free all page tables (not just pgd). ribbon_id 0 is using process's original pgd. Will be freed in fork.c */
-    if (ribbon_id != 0) {
+    /* Free all page tables, then pgd. MAIN_THREAD is using process's original pgd. Will be freed in fork.c */
+    if (ribbon_id != MAIN_THREAD) {
+        ribbon_free_mmap(mm, ribbon_id);
         pgd_free(mm, mm->pgd_ribbon[ribbon_id]);
+    } else{
+        printk(KERN_INFO "[%s] skip killing main thread's page tables. Will be done in exit_mmap()\n", __func__);
     }
     
     /* Free the actual ribbon struct */
@@ -160,8 +172,8 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     atomic_dec(&mm->num_ribbons);
     mutex_unlock(&mm->smv_metadataMutex);
 
-    printk(KERN_INFO "Deleted ribbon with ID %d, #ribbons: %d / %d\n", 
-            ribbon_id, atomic_read(&mm->num_ribbons), SMV_ARRAY_SIZE);
+    printk(KERN_INFO "[%s] Deleted ribbon with ID %d, #ribbons: %d / %d\n", 
+            __func__, ribbon_id, atomic_read(&mm->num_ribbons), SMV_ARRAY_SIZE);
 
     return 0;
 }
@@ -216,6 +228,8 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
         printk(KERN_ERR "[%s] Error, out of bound: ribbon %d, memdom %d\n", __func__, ribbon_id, memdom_id);
         return -1;
     }
+
+    printk(KERN_ERR "[%s] ribbon %d leaving memdom %d\n", __func__, ribbon_id, memdom_id);
 
     /* mm is not NULL is called by ribbon_kill() */
     if( mm == NULL ) {
@@ -390,3 +404,48 @@ void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk,
     next_mm->page_table_lock = next_mm->page_table_lock_ribbon[next_tsk->ribbon_id];
 }
 
+/* See implementation in memory.c */
+void ribbon_free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *vma,
+                    		unsigned long floor, unsigned long ceiling){
+    while (vma) {
+		struct vm_area_struct *next = vma->vm_next;
+		unsigned long addr = vma->vm_start;
+		free_pgd_range(tlb, addr, vma->vm_end, floor, next? next->vm_start: ceiling);
+		vma = next;
+    }
+}
+
+/* Free page tables for a ribbon */
+void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id){
+    struct vm_area_struct *vma = mm->mmap;
+	struct mmu_gather tlb;
+
+    /* Can happen if dup_mmap() received an OOM */
+	if (!vma) {
+		return;
+    }
+
+    /* Leave the chores of cleaning page tables to the main thread when the process exits the system by do_exit() */
+    if( ribbon_id == MAIN_THREAD ) {
+        return;
+    }
+
+    /* Ribbon thread cleans its own page tables information 
+     * Question: should we shootdown TLB? 
+     */
+    else {
+        down_write(&mm->mmap_sem);
+        printk(KERN_INFO "[%s] Free pgtables for ribbon %d\n", __func__, ribbon_id);
+        printk(KERN_INFO "[%s] Before ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
+                __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
+        tlb_gather_mmu(&tlb, mm, 0, -1);
+        update_hiwater_rss(mm);
+        tlb.ribbon_id = ribbon_id; // set up ribbon_id to be freed
+        unmap_vmas(&tlb, vma, 0, -1);
+        ribbon_free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);       
+       	tlb_finish_mmu(&tlb, 0, -1);
+        printk(KERN_INFO "[%s] After ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
+                __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
+        up_write(&mm->mmap_sem);
+    }
+}

@@ -651,6 +651,9 @@ fail_nopgd:
 static void check_mm(struct mm_struct *mm)
 {
 	int i;
+	if (mm->using_smv) {
+		printk(KERN_INFO "[%s] %s ribbon %d checking mm %p\n", __func__, current->comm, current->ribbon_id, mm);
+	}
 
 	for (i = 0; i < NR_MM_COUNTERS; i++) {
 		long x = atomic_long_read(&mm->rss_stat.count[i]);
@@ -694,9 +697,10 @@ struct mm_struct *mm_alloc(void)
  */
 void __mmdrop(struct mm_struct *mm)
 {
+	if (mm->using_smv) {
+		printk(KERN_INFO "[%s] %s in ribbon %d mm: %p\n", __func__, current->comm, current->ribbon_id, mm);
+	}
 	BUG_ON(mm == &init_mm);
-	free_all_ribbons(mm);
-	free_all_memdoms(mm);
 	mm_free_pgd(mm);
 	destroy_context(mm);
 	mmu_notifier_mm_destroy(mm);

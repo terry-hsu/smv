@@ -70,6 +70,10 @@
 #include <asm/tlbflush.h>
 #include <asm/pgtable.h>
 
+#include <linux/ribbon.h>
+#include <linux/memdom.h>
+#include <linux/smv_mm.h>
+
 #include "internal.h"
 
 #ifdef LAST_CPUPID_NOT_IN_PAGE_FLAGS
@@ -517,7 +521,13 @@ void free_pgd_range(struct mmu_gather *tlb,
 	if (addr > end - 1)
 		return;
 
-	pgd = pgd_offset(tlb->mm, addr);
+	/* Use the ribbon id recorded in tlb to free pgtables */
+	if (tlb->mm->using_smv) {
+		pgd = tlb->mm->pgd_ribbon[tlb->ribbon_id] + pgd_index(addr);
+	} else{
+		pgd = pgd_offset(tlb->mm, addr);	
+	}
+
 	do {
 		next = pgd_addr_end(addr, end);
 		if (pgd_none_or_clear_bad(pgd))
@@ -1258,7 +1268,11 @@ static void unmap_page_range(struct mmu_gather *tlb,
 
 	BUG_ON(addr >= end);
 	tlb_start_vma(tlb, vma);
-	pgd = pgd_offset(vma->vm_mm, addr);
+	if ( tlb->mm->using_smv ) {
+		pgd = tlb->mm->pgd_ribbon[tlb->ribbon_id] + pgd_index(addr);
+	} else{
+		pgd = pgd_offset(vma->vm_mm, addr);
+	}
 	do {
 		next = pgd_addr_end(addr, end);
 		if (pgd_none_or_clear_bad(pgd))
