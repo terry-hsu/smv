@@ -158,18 +158,20 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     
     /* Free all page tables, then pgd. MAIN_THREAD is using process's original pgd. Will be freed in fork.c */
     if (ribbon_id != MAIN_THREAD) {
+        down_write(&mm->mmap_sem);
         ribbon_free_mmap(mm, ribbon_id);
         pgd_free(mm, mm->pgd_ribbon[ribbon_id]);
+        up_write(&mm->mmap_sem);
     } else{
         printk(KERN_INFO "[%s] skip killing main thread's page tables. Will be done in exit_mmap()\n", __func__);
     }
     
     /* Free the actual ribbon struct */
     free_ribbon(ribbon);
-    mm->ribbon_metadata[ribbon_id] = NULL;
     
     /* Decrement ribbon count */
     mutex_lock(&mm->smv_metadataMutex);
+    mm->ribbon_metadata[ribbon_id] = NULL;
     atomic_dec(&mm->num_ribbons);
     mutex_unlock(&mm->smv_metadataMutex);
 
@@ -402,7 +404,8 @@ void ribbon_free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *vma,
     }
 }
 
-/* Free page tables for a ribbon */
+/* Free page tables for a ribbon 
+ * Caller must hold the mm semaphore */
 void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id){
     struct vm_area_struct *vma = mm->mmap;
 	struct mmu_gather tlb;
@@ -421,7 +424,6 @@ void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id){
      * Question: should we shootdown TLB? 
      */
     else {
-        down_write(&mm->mmap_sem);
         printk(KERN_INFO "[%s] Free pgtables for ribbon %d\n", __func__, ribbon_id);
         printk(KERN_INFO "[%s] Before ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
                 __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
@@ -441,6 +443,5 @@ void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id){
        	tlb_finish_mmu(&tlb, 0, -1);
         printk(KERN_INFO "[%s] After ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
                 __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
-        up_write(&mm->mmap_sem);
     }
 }
