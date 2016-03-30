@@ -3,7 +3,8 @@ CFLAGS = -g -Wall
 LIBS = -lsmv_lib -lpthread
 
 all: tc_ribbon_create tc_memdom_create \
-	 privs_t1 tc_ribbon_thread_create
+	 privs_t1 tc_ribbon_thread_create \
+	 tc_shared_mm
 
 
 tc_ribbon_create:
@@ -16,6 +17,9 @@ privs_t1:
 	$(GCC) $(CFLAGS) $@.c -o $@.o $(LIBS)
 
 tc_ribbon_thread_create:
+	$(GCC) $(CFLAGS) $@.c -o $@.o $(LIBS)
+
+tc_shared_mm:
 	$(GCC) $(CFLAGS) $@.c -o $@.o $(LIBS)
 
 clean:
