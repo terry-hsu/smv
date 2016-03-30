@@ -50,9 +50,11 @@ enum x86_pf_error_code {
 	PF_INSTR	=		1 << 4,
 };
 
+/* Called by copy_pte_smv to locate the current pgd */
+#define pgd_offset_ribbon(mm, address, ribbon_id) ((mm)->pgd_ribbon[ribbon_id]  + pgd_index((address)))
 
 int smv_valid_fault(int ribbon_id, struct vm_area_struct *vma, unsigned long error_code);
 int copy_pgtable_smv(int dst_ribbon, int src_ribbon, 
-                     unsigned long addr, unsigned long error_code,
+                     unsigned long addr, unsigned int flags,
                      struct vm_area_struct *vma);
 #endif

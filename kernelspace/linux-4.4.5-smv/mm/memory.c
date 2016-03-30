@@ -221,7 +221,7 @@ static bool tlb_next_batch(struct mmu_gather *tlb)
 void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end)
 {
 	tlb->mm = mm;
-
+	tlb->ribbon_id = current->ribbon_id;
 	/* Is it from 0 to ~0? */
 	tlb->fullmm     = !(start | (end+1));
 	tlb->need_flush_all = 0;
@@ -523,7 +523,9 @@ void free_pgd_range(struct mmu_gather *tlb,
 
 	/* Use the ribbon id recorded in tlb to free pgtables */
 	if (tlb->mm->using_smv) {
+		mutex_lock(&tlb->mm->smv_metadataMutex);
 		pgd = tlb->mm->pgd_ribbon[tlb->ribbon_id] + pgd_index(addr);
+		mutex_unlock(&tlb->mm->smv_metadataMutex);
 	} else{
 		pgd = pgd_offset(tlb->mm, addr);	
 	}
@@ -1268,8 +1270,10 @@ static void unmap_page_range(struct mmu_gather *tlb,
 
 	BUG_ON(addr >= end);
 	tlb_start_vma(tlb, vma);
-	if ( tlb->mm->using_smv ) {
+	if ( tlb->mm->using_smv ) {		
+		mutex_lock(&tlb->mm->smv_metadataMutex);
 		pgd = tlb->mm->pgd_ribbon[tlb->ribbon_id] + pgd_index(addr);
+		mutex_unlock(&tlb->mm->smv_metadataMutex);
 	} else{
 		pgd = pgd_offset(vma->vm_mm, addr);
 	}
@@ -3358,20 +3362,40 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	pmd_t *pmd;
 	pte_t *pte;
 
+	int rv = 0;
+
 	if (unlikely(is_vm_hugetlb_page(vma)))
 		return hugetlb_fault(mm, vma, address, flags);
 
-	pgd = pgd_offset(mm, address);
+	/* TODO: Add support for hugetlb pages */
+	if (mm->using_smv && current->ribbon_id != MAIN_THREAD) {
+		mutex_lock(&mm->smv_metadataMutex);
+		printk(KERN_INFO "[%s] Set ribbon %d pgd %p to MAIN_THREAD pgd %p\n", 
+				__func__, current->ribbon_id, mm->pgd_ribbon[current->ribbon_id], mm->pgd_ribbon[MAIN_THREAD]);
+	}
+
+	/* Ribbon threads should use main thread's pgd to record fault */
+	if (mm->using_smv && current->ribbon_id != MAIN_THREAD) {
+		pgd = pgd_offset_ribbon(mm, address, MAIN_THREAD);
+	} else {
+		pgd = pgd_offset(mm, address);
+	}
 	pud = pud_alloc(mm, pgd, address);
-	if (!pud)
-		return VM_FAULT_OOM;
+	if (!pud){
+		rv = VM_FAULT_OOM;
+		goto out;
+	}
 	pmd = pmd_alloc(mm, pud, address);
-	if (!pmd)
-		return VM_FAULT_OOM;
+	if (!pmd){
+		rv = VM_FAULT_OOM;
+		goto out;
+	}
 	if (pmd_none(*pmd) && transparent_hugepage_enabled(vma)) {
 		int ret = create_huge_pmd(mm, vma, address, pmd, flags);
-		if (!(ret & VM_FAULT_FALLBACK))
-			return ret;
+		if (!(ret & VM_FAULT_FALLBACK)){
+			rv = ret;
+			goto out;
+		}
 	} else {
 		pmd_t orig_pmd = *pmd;
 		int ret;
@@ -3385,22 +3409,29 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 			 * the fault.  Alternative: wait until the split
 			 * is done, and goto retry.
 			 */
-			if (pmd_trans_splitting(orig_pmd))
-				return 0;
+			if (pmd_trans_splitting(orig_pmd)){
+				rv = 0;
+				goto out;
+			}
 
-			if (pmd_protnone(orig_pmd))
-				return do_huge_pmd_numa_page(mm, vma, address,
-							     orig_pmd, pmd);
+			if (pmd_protnone(orig_pmd)){
+				rv = do_huge_pmd_numa_page(mm, vma, address,
+								 orig_pmd, pmd);
+			    goto out;
+			}
 
 			if (dirty && !pmd_write(orig_pmd)) {
 				ret = wp_huge_pmd(mm, vma, address, pmd,
 							orig_pmd, flags);
-				if (!(ret & VM_FAULT_FALLBACK))
-					return ret;
+				if (!(ret & VM_FAULT_FALLBACK)){
+					rv = ret;
+					goto out;
+				}
 			} else {
 				huge_pmd_set_accessed(mm, vma, address, pmd,
 						      orig_pmd, dirty);
-				return 0;
+				rv = 0;
+				goto out;
 			}
 		}
 	}
@@ -3411,8 +3442,10 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	 * materialize from under us from a different thread.
 	 */
 	if (unlikely(pmd_none(*pmd)) &&
-	    unlikely(__pte_alloc(mm, vma, pmd, address)))
-		return VM_FAULT_OOM;
+	    unlikely(__pte_alloc(mm, vma, pmd, address))){
+		rv = VM_FAULT_OOM;
+		goto out;
+	}
 	/*
 	 * If a huge pmd materialized under us just retry later.  Use
 	 * pmd_trans_unstable() instead of pmd_trans_huge() to ensure the pmd
@@ -3424,8 +3457,10 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	 * through an atomic read in C, which is what pmd_trans_unstable()
 	 * provides.
 	 */
-	if (unlikely(pmd_trans_unstable(pmd)))
-		return 0;
+	if (unlikely(pmd_trans_unstable(pmd))){
+		rv = 0;
+		goto out;
+	}
 	/*
 	 * A regular pmd is established and it can't morph into a huge pmd
 	 * from under us anymore at this point because we hold the mmap_sem
@@ -3433,8 +3468,18 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	 * safe to run pte_offset_map().
 	 */
 	pte = pte_offset_map(pmd, address);
+	rv =  handle_pte_fault(mm, vma, address, pte, pmd, flags);
+out:
 
-	return handle_pte_fault(mm, vma, address, pte, pmd, flags);
+	if (mm->using_smv && current->ribbon_id != MAIN_THREAD) {
+		/* Only copy page table to current ribbon if handle_pte_fault succeeds */
+		if (rv == 0) {
+			copy_pgtable_smv(current->ribbon_id, MAIN_THREAD, address, flags, vma);
+		}
+		mutex_unlock(&mm->smv_metadataMutex);
+	}
+
+	return rv;
 }
 
 /*

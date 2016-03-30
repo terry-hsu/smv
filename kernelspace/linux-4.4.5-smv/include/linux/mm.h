@@ -1562,7 +1562,12 @@ static inline void pte_lock_deinit(struct page *page)
  */
 static inline spinlock_t *pte_lockptr(struct mm_struct *mm, pmd_t *pmd)
 {
-	return &mm->page_table_lock;
+	if (mm->using_smv) {
+		return &mm->page_table_lock_ribbon[current->ribbon_id];
+	}
+	else{
+		return &mm->page_table_lock;
+	}
 }
 static inline void ptlock_cache_init(void) {}
 static inline bool ptlock_init(struct page *page) { return true; }

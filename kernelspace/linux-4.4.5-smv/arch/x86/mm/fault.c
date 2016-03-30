@@ -1070,9 +1070,9 @@ static noinline void fault_info(unsigned long addr, struct vm_area_struct *vma, 
 		return;
 	}
 
-	printk(KERN_INFO "[%s] pid %d ribbon %d page fault at 0x%16lx, page_aligned_addr: 0x%16lx, vma->memdom_id: %d\n",
+	printk(KERN_INFO "\n-- [%s] pid %d ribbon %d page fault at 0x%16lx, page_aligned_addr: 0x%16lx, vma->memdom_id: %d--\n",
 						__func__, tsk->pid, tsk->ribbon_id, addr, page_aligned_addr, vma->memdom_id);
-    printk(KERN_INFO "[%s] prot: %d, write: %d, user: %d, rsvd: %d, instr_code: %d, vma->memdom_id: %d\n", 
+    printk(KERN_INFO "-- [%s] prot: %d, write: %d, user: %d, rsvd: %d, instr_code: %d, vma->memdom_id: %d -- \n\n", 
 			__func__, prot_code, write_code, user_code, rsvd_code, instr_code, vma->memdom_id);
 }
 
@@ -1263,7 +1263,7 @@ good_area:
 
 	/* SMV related checking, terminate a process if it issus smv invalid page fault */
 	if ( !smv_valid_fault(tsk->ribbon_id, vma, error_code) ){
-		printk(KERN_INFO "[%s] ribbon %d issued smv invalid fault, KILL this process\n", __func__, tsk->ribbon_id);
+		printk(KERN_INFO "[%s] --- ribbon %d issued smv invalid fault, KILL task pid %d ---\n", __func__, tsk->ribbon_id, tsk->pid);
 		bad_area_access_error(regs, error_code, address);
 		return;
 	}

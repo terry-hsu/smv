@@ -37,9 +37,10 @@ int ribbon_main_init(void){
     ribbon_id = ribbon_create();
     memdom_id = memdom_create();
 
-    /* Make the global ribbon join the global memdom*/
+    /* Make the global ribbon join the global memdom with full privileges */
     ribbon_join_memdom(memdom_id, ribbon_id);
-    
+    memdom_priv_add(memdom_id, ribbon_id, MEMDOM_READ | MEMDOM_WRITE | MEMDOM_EXECUTE | MEMDOM_ALLOCATE);    
+
     /* Initialize mm-related metadata */
     mutex_lock(&mm->smv_metadataMutex);
     mm->pgd_ribbon[MAIN_THREAD] = mm->pgd; // record the main thread's pgd
@@ -60,7 +61,7 @@ int ribbon_create(void){
     struct mm_struct *mm = current->mm;
     struct ribbon_struct *ribbon = NULL;
 
-    /* SMP: protect shared ribbon bitmap */
+    /* SMP: protect shared ribbon bitmap */    
     mutex_lock(&mm->smv_metadataMutex);
 
     printk(KERN_INFO "[%s] Before ribbon_create mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
@@ -378,30 +379,16 @@ void ribbon_free_pgd(struct mm_struct *mm, int ribbon_id){
     free_page((unsigned long)mm->pgd_ribbon[ribbon_id]);
 }
 
-/* Security context switch from one ribbon to another (change secure memory view) */
+/* Hook for security context switch from one ribbon to another (change secure memory view) 
+ */
 void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk, 
                    struct mm_struct *prev_mm, struct mm_struct *next_mm){
 
-	unsigned long cpu = smp_processor_id();	
-
-    /* Skip ribbon context switch if the next tasks is not in any ribbons */
-    if( next_tsk && next_tsk->ribbon_id == -1 ) {
+    /* Skip ribbon context switch if the next tasks is not in any ribbons, or if next_mm is NULL */
+    if( (next_tsk && next_tsk->ribbon_id == -1) || 
+         next_mm == NULL) {
         return;
     }
-
-	printk(KERN_INFO "[%s] -----------------------------\n", __func__);
-	if (prev_tsk && prev_tsk->ribbon_id != -1) {
-		printk(KERN_INFO "[%s] cpu: %lu prev ribbon %d switching out\n", __func__, cpu, prev_tsk->ribbon_id );
-	}
-
-    printk(KERN_INFO "[%s] cpu: %lu next ribbon %d switching in, pgd: %p\n", 
-            __func__, cpu, next_tsk->ribbon_id, next_mm->pgd_ribbon[next_tsk->ribbon_id] );
-	
-	printk(KERN_INFO "[%s] -----------------------------\n", __func__);
-
-    /* Tell the kernel what page tables the ribbon will be using */
-    next_mm->pgd = next_mm->pgd_ribbon[next_tsk->ribbon_id];
-    next_mm->page_table_lock = next_mm->page_table_lock_ribbon[next_tsk->ribbon_id];
 }
 
 /* See implementation in memory.c */
@@ -440,9 +427,17 @@ void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id){
                 __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
         tlb_gather_mmu(&tlb, mm, 0, -1);
         update_hiwater_rss(mm);
-        tlb.ribbon_id = ribbon_id; // set up ribbon_id to be freed
+
+        /* Overwrite the ribbon_id to be freed. tlb_gather_mmu set tlb.ribbon_id to be current->ribbon_id.
+         * However, this function could be called by the main thread (ribbon_id = 0) when the process 
+         * exiting the system to free the page tables for other ribbons (ribbon_id !=0). 
+         * So here we need to set the correct ribbon_id for unmap_vmas and ribbon_free_pgtables. */
+        tlb.ribbon_id = ribbon_id; 
+
+        /* Do the actual job of freeing page tables */
         unmap_vmas(&tlb, vma, 0, -1);
         ribbon_free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);       
+
        	tlb_finish_mmu(&tlb, 0, -1);
         printk(KERN_INFO "[%s] After ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
                 __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
