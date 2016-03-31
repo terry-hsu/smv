@@ -1378,6 +1378,10 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long start,
 
 	lru_add_drain();
 	tlb_gather_mmu(&tlb, mm, start, end);
+	/* Update ribbon_id in tlb if the caller is madvise_dontneed() */
+	if (details) {
+		tlb.ribbon_id = details->ribbon_id;
+	}
 	update_hiwater_rss(mm);
 	mmu_notifier_invalidate_range_start(mm, start, end);
 	for ( ; vma && vma->vm_start < end; vma = vma->vm_next)

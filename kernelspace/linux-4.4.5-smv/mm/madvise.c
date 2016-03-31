@@ -20,6 +20,7 @@
 #include <linux/backing-dev.h>
 #include <linux/swap.h>
 #include <linux/swapops.h>
+#include <linux/smv_mm.h>
 
 /*
  * Any behaviour which results in changes to the vma->vm_flags needs to
@@ -279,11 +280,26 @@ static long madvise_dontneed(struct vm_area_struct *vma,
 			     struct vm_area_struct **prev,
 			     unsigned long start, unsigned long end)
 {
+	struct zap_details zap;
+	struct mm_struct *mm = current->mm;
 	*prev = vma;
 	if (vma->vm_flags & (VM_LOCKED|VM_HUGETLB|VM_PFNMAP))
 		return -EINVAL;
 
-	zap_page_range(vma, start, end - start, NULL);
+	if ( mm->using_smv ) {	
+		memset(&zap, 0, sizeof(struct zap_details));
+		zap.ribbon_id = -1;
+		/* Call zap_page_range for all ribbons */
+		do {
+			zap.ribbon_id = find_next_bit(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE, (zap.ribbon_id+1));
+			if (zap.ribbon_id != SMV_ARRAY_SIZE) {
+				printk(KERN_INFO "[%s] calling zap_page_range() for ribbon %d\n", __func__, zap.ribbon_id);
+				zap_page_range(vma, start, end - start, &zap);
+			}
+		} while (zap.ribbon_id != SMV_ARRAY_SIZE);
+	} else {
+		zap_page_range(vma, start, end - start, NULL);
+	}
 	return 0;
 }
 

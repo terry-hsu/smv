@@ -2410,9 +2410,35 @@ static void unmap_region(struct mm_struct *mm,
 	lru_add_drain();
 	tlb_gather_mmu(&tlb, mm, start, end);
 	update_hiwater_rss(mm);
-	unmap_vmas(&tlb, vma, start, end);
-	free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
-				 next ? next->vm_start : USER_PGTABLES_CEILING);
+
+	/* Get rid of page table information for all ribbons */
+	if (mm->using_smv) {
+		int ribbon_id = -1;
+		do {
+			ribbon_id = find_next_bit(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE, (ribbon_id + 1) );		
+			if (ribbon_id != SMV_ARRAY_SIZE) {
+				printk(KERN_INFO "[%s] getting rid of page table information for ribbon %d\n", __func__, ribbon_id);
+				tlb.ribbon_id = ribbon_id;
+				unmap_vmas(&tlb, vma, start, end);
+				/* Only the main thread should touch vma in free_pgtables */
+				if (ribbon_id == MAIN_THREAD) {
+					free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
+								 next ? next->vm_start : USER_PGTABLES_CEILING);
+				}
+				/* Other ribbon threads just free its own page tables */ 
+				else {
+					ribbon_free_pgtables(&tlb, vma, 
+										 prev ? prev->vm_end : FIRST_USER_ADDRESS, 
+										 next ? next->vm_start : USER_PGTABLES_CEILING);       
+				}
+			}
+		} while (ribbon_id != SMV_ARRAY_SIZE);
+	} 
+	else {
+		unmap_vmas(&tlb, vma, start, end);
+		free_pgtables(&tlb, vma, prev ? prev->vm_end : FIRST_USER_ADDRESS,
+					 next ? next->vm_start : USER_PGTABLES_CEILING);
+	}
 	tlb_finish_mmu(&tlb, start, end);
 }
 
@@ -2877,7 +2903,7 @@ void exit_mmap(struct mm_struct *mm)
 	if (mm->using_smv) {
 		free_all_ribbons(mm);   /* Free ribbons and their mm */
 		free_all_memdoms(mm);   /* Free memdoms */
-		tlb.ribbon_id = 0; 		/* Set ribbon id in tlb for unmap_vmas and free_pgtables to use */
+		tlb.ribbon_id = MAIN_THREAD;	/* Set ribbon id in tlb for unmap_vmas and free_pgtables to use */
 	}
 
 	/* update_hiwater_rss(mm) here? but nobody should be looking */

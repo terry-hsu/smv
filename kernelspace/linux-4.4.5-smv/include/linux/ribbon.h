@@ -38,11 +38,14 @@ struct ribbon_struct {
 };
 
 /// --- Functions called by the kernel internally to manage memory space --- ///
+struct mmu_gather;
 #define allocate_ribbon()         (kmem_cache_alloc(ribbon_cachep, GFP_KERNEL)) /* SLAB cache for ribbon_struct structure */
 #define free_ribbon(ribbon)       (kmem_cache_free(ribbon_cachep, ribbon))
 extern void ribbon_init(void);      /* Called by init/main.c */
 pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id);
 void ribbon_free_pgd(struct mm_struct *mm, int ribbon_id);
+void ribbon_free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *vma,
+                    		unsigned long floor, unsigned long ceiling);
 void switch_ribbon(struct task_struct *prev_tsk, struct task_struct *next_tsk, struct mm_struct *prev_mm, struct mm_struct *next_mm);
 void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id);
 
