@@ -198,7 +198,7 @@ int parse_message(char* message){
                 ribbon_op = 2;
             else if( (strcmp(token, "domain")) == 0 )
                 ribbon_op = 3;
-            else if ((strcmp(token, "dump_vma")) == 0 ) 
+            else if ((strcmp(token, "exists")) == 0 ) 
                 ribbon_op = 4; // print all vma a ribbon holds
             else if ((strcmp(token, "registerthread")) == 0 ) 
                 ribbon_op = 5;
@@ -349,7 +349,7 @@ int parse_message(char* message){
     else if(message_type == 1){
 
         if (ribbon_op == 10) {
-            /* User queries current ribbon ID */
+            /* User queries ribbon ID the current thread is running in */
             return ribbon_get_ribbon_id();
         }
         else if (ribbon_op == 9) {
@@ -360,9 +360,8 @@ int parse_message(char* message){
 //          ribbon_finalize();
         } 
         else if (ribbon_op == 4) {
-            /* Dump out all vma a ribbon currently holds */
-//          dump_vma_for_ribbon(ribbon_id);
-            return 0;
+            /* Check whether a ribbon exists */
+            return ribbon_exists(ribbon_id);
         } 
         else if (ribbon_op == 5) {
             printk(KERN_INFO "[%s] register ribbon thread running in ribbon %ld\n", __func__, ribbon_id);
