@@ -294,9 +294,32 @@ int ribbon_is_in_memdom(int memdom_id, int ribbon_id){
 }
 EXPORT_SYMBOL(ribbon_is_in_memdom);
 
-int ribbon_get_ribbon_id(void){
+/* Check if a ribbon exists, 1 if yes, 0 otherwise */
+int ribbon_exists(int ribbon_id){
+    struct ribbon_struct *ribbon = NULL; 
+    struct mm_struct *mm = current->mm;
 
-    return 0;
+    if( ribbon_id > LAST_RIBBON_INDEX ) {
+        printk(KERN_ERR "[%s] Error, out of bound: ribbon %d\n", __func__, ribbon_id);
+        return 0;
+    }
+    
+    /* TODO: add privilege checks */
+
+    mutex_lock(&mm->smv_metadataMutex);
+    ribbon = current->mm->ribbon_metadata[ribbon_id];
+    mutex_unlock(&mm->smv_metadataMutex);
+
+    if( !ribbon ) {
+        printk(KERN_ERR "[%s] ribbon %p does not exist.\n", __func__, ribbon);
+        return 0;        
+    }
+    return 1;
+}
+EXPORT_SYMBOL(ribbon_exists);
+
+int ribbon_get_ribbon_id(void){    
+    return current->ribbon_id;
 }
 EXPORT_SYMBOL(ribbon_get_ribbon_id);
 
