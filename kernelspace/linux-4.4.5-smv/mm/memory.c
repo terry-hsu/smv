@@ -3372,15 +3372,14 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 		return hugetlb_fault(mm, vma, address, flags);
 
 	/* TODO: Add support for hugetlb pages */
-	if (mm->using_smv && current->ribbon_id != MAIN_THREAD) {
-		mutex_lock(&mm->smv_metadataMutex);
-		printk(KERN_INFO "[%s] Set ribbon %d pgd %p to MAIN_THREAD pgd %p\n", 
-				__func__, current->ribbon_id, mm->pgd_ribbon[current->ribbon_id], mm->pgd_ribbon[MAIN_THREAD]);
-	}
 
-	/* Ribbon threads should use main thread's pgd to record fault */
-	if (mm->using_smv && current->ribbon_id != MAIN_THREAD) {
+	/* Ribbon threads should use main thread's pgd to record fault 
+	 * Pthreads (ribbon_id == -1) should still use pgd_offset 
+	 */
+	if (mm->using_smv && current->ribbon_id > MAIN_THREAD) {
+		mutex_lock(&mm->smv_metadataMutex);
 		pgd = pgd_offset_ribbon(mm, address, MAIN_THREAD);
+		mutex_unlock(&mm->smv_metadataMutex);
 	} else {
 		pgd = pgd_offset(mm, address);
 	}
@@ -3475,12 +3474,14 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	rv =  handle_pte_fault(mm, vma, address, pte, pmd, flags);
 out:
 
-	if (mm->using_smv && current->ribbon_id != MAIN_THREAD) {
+	/* Ribbon threads should copy the pgtables from the main thread
+	 * Pthreads (ribbon_id == -1) should still use pgd_offset 
+	 */
+	if (mm->using_smv && current->ribbon_id > MAIN_THREAD) {
 		/* Only copy page table to current ribbon if handle_pte_fault succeeds */
 		if (rv == 0) {
 			copy_pgtable_smv(current->ribbon_id, MAIN_THREAD, address, flags, vma);
 		}
-		mutex_unlock(&mm->smv_metadataMutex);
 	}
 
 	return rv;
