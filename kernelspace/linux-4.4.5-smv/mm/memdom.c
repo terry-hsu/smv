@@ -335,7 +335,7 @@ unsigned long memdom_free(unsigned long addr){
 }
 EXPORT_SYMBOL(memdom_free);
 
-/* Return the memdom id used by the master threadd (global memdom) */
+/* Return the memdom id used by the master thread (global memdom) */
 int memdom_main_id(void){
     return MAIN_THREAD;
 }
