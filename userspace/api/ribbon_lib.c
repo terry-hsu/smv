@@ -9,14 +9,13 @@
 #include <sys/types.h>
 #include "ribbon_lib.h"
 
-#define RIBBON_CLONE_FLAG (CLONE_RIBBON |CLONE_FS | CLONE_FILES | SIGCHLD) 
-
 pthread_mutex_t create_thread_mutex;
 
 /* Telling the kernel that this process will be using the secure memory view model 
  * The master thread must call this routine to notify the kernel its status */
-int ribbon_main_init(void){
+int ribbon_main_init(int global){
     int rv = -1;
+	ALLOW_GLOBAL = 0;
 
 	/* Set mm->using_smv to true in kernel space */
 	rv = message_to_kernel("ribbon,maininit");
@@ -29,6 +28,8 @@ int ribbon_main_init(void){
 	/* Initialize mutex for protecting smv_thread_create */
 	pthread_mutex_init(&create_thread_mutex, NULL);
 
+	/* Decide whether we allow all threads to access global memdom */
+	ALLOW_GLOBAL = global;
 	return rv;
 }
 
@@ -100,10 +101,52 @@ int ribbon_is_in_domain(int memdom_id, int ribbon_id) {
 	return rv;
 }
 
-/* Create an smv thread running in a ribbon, return 0 on success, -1 otherwise */
+/* Check if ribbon is in memory domain */
+int ribbon_exists(int ribbon_id) {
+	int rv = 0;
+	char buf[50];
+	sprintf(buf, "ribbon,exists,%d", ribbon_id);
+	rv = message_to_kernel(buf);
+	if (rv == -1) {
+		fprintf(stderr, "ribbon_exists(ribbon %d) failed\n", ribbon_id);
+		return -1;
+	}
+	rlog("Ribbon ID %d exists? %d", ribbon_id, rv);
+	return rv;
+}
+
+/* Create an smv thread running in a ribbon.
+ * TODO: When caller specify ribbon_id = -1, ribbon_thread_create automatically creates a new ribbon 
+ * for the about-to-run thread to running in.  Without non-zero ribbon, the function first check
+ * if the ribbon_id exists in the system,  then proceed to create the thread to run in the given
+ * ribbon id.
+ * Return the ribbon_id the new thread is running in. On error, return -1.
+ * TODO: Call fn from a wrapper function and create a memdom to protect thread-local stack 
+ * pthread_attr_getstack()? 
+ */
 int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args){
 	int rv = 0;
 	char buf[100];
+
+	/* When caller specify ribbon_id = -1, ribbon_thread_create automatically creates a new ribbon 
+	 * for the about-to-run thread to running in. 
+	 */
+	if (ribbon_id == NEW_RIBBON) {
+		ribbon_id = ribbon_create();
+		fprintf(stderr, "creating a new ribbon %d for the new thread to run in\n", ribbon_id);
+	}
+
+	/* Block thread if it tries to run in a non-existing ribbon */
+	if (!ribbon_exists(ribbon_id)) {
+		fprintf(stderr, "thread cannot run in a non-existing ribbon %d\n", ribbon_id);		
+		return -1;
+	}
+
+	/* Join the global memdom if the main thread allows all threads to access the global memory areas */
+	if( ALLOW_GLOBAL){
+		ribbon_join_domain(0, ribbon_id);
+		memdom_priv_add(0, ribbon_id, MEMDOM_READ | MEMDOM_WRITE | MEMDOM_ALLOCATE | MEMDOM_EXECUTE);
+	}
 
 	/* Atomic operation */
 	pthread_mutex_lock(&create_thread_mutex);
@@ -119,14 +162,18 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 	}
 
 	/* Create a pthread (kernel knows it's a ribbon thread because we registered a ribbon id for this thread */
+	/* Use the real pthread_create */
+#undef pthread_create
 	rv = pthread_create(tid, NULL, fn, args);
 	if (rv) {
 		fprintf(stderr, "pthread_create for ribbon %d failed\n", ribbon_id);		
 		pthread_mutex_unlock(&create_thread_mutex);
 		return -1;
 	}
+	/* Define pthread_create to be ribbon_thread_create again */
+#define pthread_create(tid, attr, fn, args) ribbon_thread_create(NEW_RIBBON, tid, fn, args)
 
 	pthread_mutex_unlock(&create_thread_mutex);
 
-	return 0;
+	return ribbon_id;
 }

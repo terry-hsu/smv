@@ -10,8 +10,6 @@
 #include "memdom_lib.h"
 #include "kernel_comm.h"
 
-#define CLONE_RIBBON 0x02000000
-
 #define LOGGING 0
 #define __SOURCEFILE__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define rlog(format, ...) { \
@@ -21,12 +19,16 @@
     }\
 }
 
+#define NEW_RIBBON -1
+#define pthread_create(tid, attr, fn, args) ribbon_thread_create(NEW_RIBBON, tid, fn, args)
+int ALLOW_GLOBAL; // 1: all threads can access global memdom, 0 otherwise
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Telling the kernel that this process will be using the secure memory view model */
-int ribbon_main_init(void);
+int ribbon_main_init(int);
 
 /* Create a ribbon and return the ID of the newly created ribbon */
 int ribbon_create(void);
@@ -46,6 +48,8 @@ int ribbon_is_in_domain(int memdom_id, int ribbon_id);
 /* Create an smv thread running in a ribbon */
 int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args);
 
+/* Check whether a ribbon exists */
+int ribbon_exists(int ribbon_id);
 #ifdef __cplusplus
 }
 #endif
