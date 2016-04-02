@@ -122,6 +122,7 @@ int ribbon_exists(int ribbon_id) {
  * if the ribbon_id exists in the system,  then proceed to create the thread to run in the given
  * ribbon id.
  * Return the ribbon_id the new thread is running in. On error, return -1.
+ * If defined as pthread_create, we should return 0 but not the ribbon id.
  * TODO: Call fn from a wrapper function and create a memdom to protect thread-local stack 
  * pthread_attr_getstack()? 
  */
@@ -162,17 +163,26 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 		return -1;
 	}
 
+	
+#ifdef INTERCEPT_PTHREAD_CREATE
+#undef pthread_create
+#endif
 	/* Create a pthread (kernel knows it's a ribbon thread because we registered a ribbon id for this thread */
 	/* Use the real pthread_create */
-#undef pthread_create
 	rv = pthread_create(tid, NULL, fn, args);
 	if (rv) {
 		fprintf(stderr, "pthread_create for ribbon %d failed\n", ribbon_id);		
 		pthread_mutex_unlock(&create_thread_mutex);
 		return -1;
 	}
-	/* Define pthread_create to be ribbon_thread_create again */
+
+#ifdef INTERCEPT_PTHREAD_CREATE
+	/* Set return value to 0 to avoid pthread_create error */
+	ribbon_id = 0;
+
+	/* ReDefine pthread_create to be ribbon_thread_create again */
 #define pthread_create(tid, attr, fn, args) ribbon_thread_create(NEW_RIBBON, tid, fn, args)
+#endif
 
 	pthread_mutex_unlock(&create_thread_mutex);
 
