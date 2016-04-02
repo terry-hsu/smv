@@ -19,9 +19,10 @@
     }\
 }
 
+
 #define NEW_RIBBON -1
 #define pthread_create(tid, attr, fn, args) ribbon_thread_create(NEW_RIBBON, tid, fn, args)
-int ALLOW_GLOBAL; // 1: all threads can access global memdom, 0 otherwise
+extern int ALLOW_GLOBAL; // 1: all threads can access global memdom, 0 otherwise
 
 #ifdef __cplusplus
 extern "C" {

@@ -10,6 +10,7 @@
 #include "ribbon_lib.h"
 
 pthread_mutex_t create_thread_mutex;
+int ALLOW_GLOBAL; // 1: all threads can access global memdom, 0 otherwise
 
 /* Telling the kernel that this process will be using the secure memory view model 
  * The master thread must call this routine to notify the kernel its status */
