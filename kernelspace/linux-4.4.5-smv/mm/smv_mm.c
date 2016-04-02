@@ -105,8 +105,8 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
 
     /* Don't copy page table to the main thread */
     if ( dst_ribbon == MAIN_THREAD ) {
-        printk(KERN_ERR "[%s] Error: ribbon %d attempts to overwrite main thread's page table!\n", __func__, src_ribbon);
-        return -1;
+        printk(KERN_INFO "[%s] ribbon %d attempts to overwrite main thread's page table. Skip\n", __func__, src_ribbon);
+        return 0;
     }
     /* Source and destination ribbons cannot be the same */
     if ( dst_ribbon == src_ribbon ) {
@@ -115,9 +115,13 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
     }
     /* Main thread should not call this function */
     if ( current->ribbon_id == MAIN_THREAD ) {
-        printk(KERN_INFO "[%s] main thread ribbon %d should not be calling this function\n", __func__, current->ribbon_id);
+        printk(KERN_INFO "[%s] main thread ribbon %d, skip\n", __func__, current->ribbon_id);
         return 0;
     }
+
+
+    /* SMP protection */
+    mutex_lock(&mm->smv_metadataMutex);
 
     /* Source ribbon:
      * Page walk to obtain the source pte 
@@ -146,7 +150,6 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
         printk(KERN_ERR "[%s] Error: !dst_pmd, address 0x%16lx\n", __func__, address);
         goto unlock_src;
     }
-    /* TODO: Add hugetlb page support for pmd here? */
     if ( unlikely(pmd_none(*dst_pmd)) &&
          unlikely(__pte_alloc(mm, vma, dst_pmd, address))) {    
          rv = VM_FAULT_OOM;
@@ -173,15 +176,19 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
             }
     	    add_mm_rss_vec(mm, rss);
         }
+        printk(KERN_INFO "[%s] src_pte 0x%16lx(ribbon %d) != dst_pte 0x%16lx (ribbon %d) for addr 0x%16lx\n", __func__, pte_val(*src_pte), src_ribbon, pte_val(*dst_pte), dst_ribbon, address);
     } else{
         printk(KERN_INFO "[%s] src_pte (ribbon %d) == dst_pte (ribbon %d) for addr 0x%16lx\n", __func__, src_ribbon, dst_ribbon, address);
     }
 
-    /* Set the actual value to be the same as the source pte for destination pte */
+    /* Set the actual value to be the same as the source pgtables for destination  */   
     set_pte_at(mm, address, dst_pte, *src_pte);
 
-    /* pte_set_flags? */
-
+    printk(KERN_INFO "[%s] src ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
+                __func__, src_ribbon, pgd_val(*src_pgd), pud_val(*src_pud), pmd_val(*src_pmd), pte_val(*src_pte));
+    printk(KERN_INFO "[%s] dst ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
+                __func__, dst_ribbon, pgd_val(*dst_pgd), pud_val(*dst_pud), pmd_val(*dst_pmd), pte_val(*dst_pte));
+  
     spin_unlock(dst_ptl);
     pte_unmap(dst_pte);    
 
@@ -198,5 +205,6 @@ unlock_src:
         printk(KERN_INFO "[%s] ribbon %d copied pte from MAIN_THREAD. addr 0x%16lx, *src_pte 0x%16lx, *dst_pte 0x%16lx\n", 
                __func__, dst_ribbon, address, pte_val(*src_pte), pte_val(*dst_pte));
     }
-     return rv;
+	mutex_unlock(&mm->smv_metadataMutex);
+    return rv;
 }
