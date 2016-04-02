@@ -180,7 +180,9 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
 		BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
 
-		if (!cpumask_test_cpu(cpu, mm_cpumask(next))) {
+		/* Context switch for ribbon threads even if mm is the same one (for new pgtables) */
+		if (!cpumask_test_cpu(cpu, mm_cpumask(next)) ||
+			(next->using_smv) ) {
 			/*
 			 * On established mms, the mm_cpumask is only changed
 			 * from irq context, from ptep_clear_flush() while in
