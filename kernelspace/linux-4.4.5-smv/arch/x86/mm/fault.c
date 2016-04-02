@@ -1057,7 +1057,7 @@ static inline bool smap_violation(int error_code, struct pt_regs *regs)
 }
 
 /* For debugging: prints out the information about this page fault*/
-static noinline void fault_info(unsigned long addr, struct vm_area_struct *vma, unsigned long error_code){
+static noinline void fault_info(unsigned long addr, struct vm_area_struct *vma, unsigned long error_code, int *showed){
 	struct task_struct *tsk = current;
     int prot_code = error_code & PF_PROT;
     int write_code = error_code & PF_WRITE;
@@ -1066,14 +1066,16 @@ static noinline void fault_info(unsigned long addr, struct vm_area_struct *vma, 
     int instr_code = error_code & PF_INSTR; 
     unsigned long page_aligned_addr = addr & PAGE_MASK;
 
-	if ((!vma) || (!current->mm->using_smv)) {
+	if ((!vma) || (!current->mm->using_smv) || (*showed != 0)) {
 		return;
 	}
 
 	printk(KERN_INFO "\n-- [%s] pid %d ribbon %d page fault at 0x%16lx, page_aligned_addr: 0x%16lx, vma->memdom_id: %d--\n",
 						__func__, tsk->pid, tsk->ribbon_id, addr, page_aligned_addr, vma->memdom_id);
-    printk(KERN_INFO "-- [%s] prot: %d, write: %d, user: %d, rsvd: %d, instr_code: %d, vma->memdom_id: %d -- \n\n", 
+    printk(KERN_INFO "-- [%s] prot: %d, write: %d, user: %d, rsvd: %d, instr_code: %d, vma->memdom_id: %d --\n", 
 			__func__, prot_code, write_code, user_code, rsvd_code, instr_code, vma->memdom_id);
+	/* Prevent recurring fault info */
+	*showed = 1;
 }
 
 /*
@@ -1093,6 +1095,7 @@ __do_page_fault(struct pt_regs *regs, unsigned long error_code,
 	struct task_struct *tsk;
 	struct mm_struct *mm;
 	int fault, major = 0;
+	int showed_fault_info = 0;
 	unsigned int flags = FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_KILLABLE;
 
 	tsk = current;
@@ -1222,8 +1225,8 @@ retry:
 		might_sleep();
 	}
 
-	vma = find_vma(mm, address);	
-	fault_info(address, vma, error_code);
+	vma = find_vma(mm, address);
+	fault_info(address, vma, error_code, &showed_fault_info);	
 	if (unlikely(!vma)) {
 		bad_area(regs, error_code, address);
 		return;
