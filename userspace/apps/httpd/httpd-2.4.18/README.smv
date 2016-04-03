@@ -1,0 +1,17 @@
+For the impatient:
+
+Download httpd
+Download apr
+Download apr-util
+Extract apr and apr-util to $httpd_root/srclib/apr and $httpd_root/srclib/apr-util respectively.
+cd to $httpd_root
+Add #include <ribbon_lib.h> and ribbon_main_init(1) to $httpd_root/server/mpm/your_mpm_module (e.g., event)/mpm_main (e.g., event.c)
+Add #include <ribbon_lib.h> to $httpd_root/srclib/apr/threadproc/unix/thread.c
+Run ./configure LIBS="-lsmv_lib" --prefix=/home/terry/workspace/smv/userspace/apps/httpd/build --with-included-apr
+make -j #cores
+make install
+cd to $httpd_build/bin
+Run sudo ./httpd -k  start(-X just one process and don't detach)
+Modify settings in $httpd_build/config as needed
+    e.g., ServerName, listening port, #processes to fork etc.
+
