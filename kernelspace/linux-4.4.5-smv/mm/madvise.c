@@ -293,7 +293,7 @@ static long madvise_dontneed(struct vm_area_struct *vma,
 		do {
 			zap.ribbon_id = find_next_bit(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE, (zap.ribbon_id+1));
 			if (zap.ribbon_id != SMV_ARRAY_SIZE) {
-				printk(KERN_INFO "[%s] ribbon %d [0x%16lx to 0x%16lx]\n", __func__, zap.ribbon_id, start, end);
+				slog(KERN_INFO "[%s] ribbon %d [0x%16lx to 0x%16lx]\n", __func__, zap.ribbon_id, start, end);
 				zap_page_range(vma, start, end - start, &zap);
 			}
 		} while (zap.ribbon_id != SMV_ARRAY_SIZE);

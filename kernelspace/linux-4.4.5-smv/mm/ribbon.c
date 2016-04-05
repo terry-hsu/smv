@@ -64,7 +64,7 @@ int ribbon_create(void){
     /* SMP: protect shared ribbon bitmap */    
     mutex_lock(&mm->smv_metadataMutex);
 
-    printk(KERN_INFO "[%s] Before ribbon_create mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
+    slog(KERN_INFO "[%s] Before ribbon_create mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
             __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
     /* Are we having too many ribbons? */
     if( atomic_read(&mm->num_ribbons) == SMV_ARRAY_SIZE ) {
@@ -96,7 +96,7 @@ int ribbon_create(void){
     /* Increase total number of ribbon count in mm_struct */
     atomic_inc(&mm->num_ribbons);
 
-    printk(KERN_INFO "Created new ribbon with ID %d, #ribbons: %d / %d\n", 
+    slog(KERN_INFO "Created new ribbon with ID %d, #ribbons: %d / %d\n", 
             ribbon_id, atomic_read(&mm->num_ribbons), SMV_ARRAY_SIZE);
     goto out;
 
@@ -104,7 +104,7 @@ err:
     printk(KERN_ERR "Too many ribbons, cannot create more.\n");
     ribbon_id = -1;
 out:
-    printk(KERN_INFO "[%s] After ribbon_create mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
+    slog(KERN_INFO "[%s] After ribbon_create mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
             __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
 
     mutex_unlock(&mm->smv_metadataMutex);
@@ -132,7 +132,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     mutex_lock(&mm->smv_metadataMutex);
     ribbon = mm->ribbon_metadata[ribbon_id]; 
 
-    printk(KERN_INFO "[%s] killing ribbon metadata %p with ID %d\n", __func__, ribbon, ribbon_id);
+    slog(KERN_INFO "[%s] killing ribbon metadata %p with ID %d\n", __func__, ribbon, ribbon_id);
     /* TODO: check if current task has the permission to delete the ribbon, only master thread can do this */
     
     /* Clear ribbon_id-th bit in mm's ribbon_bitmapInUse */
@@ -146,7 +146,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     }
 
     /* Clear all ribbon_bitmap(Read/Write/Execute/Allocate) bits for this ribbon in all memdoms */  
-    printk(KERN_INFO "[%s] leaving all the joined memdoms\n", __func__);
+    slog(KERN_INFO "[%s] leaving all the joined memdoms\n", __func__);
     do {       
         mutex_lock(&ribbon->ribbon_mutex);
         memdom_id = find_first_bit(ribbon->memdom_bitmapJoin, SMV_ARRAY_SIZE);
@@ -163,7 +163,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
         pgd_free(mm, mm->pgd_ribbon[ribbon_id]);
         up_write(&mm->mmap_sem);
     } else{
-        printk(KERN_INFO "[%s] skip killing main thread's page tables. Will be done in exit_mmap()\n", __func__);
+        slog(KERN_INFO "[%s] skip killing main thread's page tables. Will be done in exit_mmap()\n", __func__);
     }
     
     /* Free the actual ribbon struct */
@@ -175,7 +175,7 @@ int ribbon_kill(int ribbon_id, struct mm_struct *mm){
     atomic_dec(&mm->num_ribbons);
     mutex_unlock(&mm->smv_metadataMutex);
 
-    printk(KERN_INFO "[%s] Deleted ribbon with ID %d, #ribbons: %d / %d\n", 
+    slog(KERN_INFO "[%s] Deleted ribbon with ID %d, #ribbons: %d / %d\n", 
             __func__, ribbon_id, atomic_read(&mm->num_ribbons), SMV_ARRAY_SIZE);
 
     return 0;
@@ -187,7 +187,7 @@ void free_all_ribbons(struct mm_struct *mm){
     int index = 0;
     while( atomic_read(&mm->num_ribbons) > 0 ){
         index = find_first_bit(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE);
-        printk(KERN_INFO "[%s] killing ribbon %d, remaining #ribbons: %d\n", __func__, index, atomic_read(&mm->num_ribbons));
+        slog(KERN_INFO "[%s] killing ribbon %d, remaining #ribbons: %d\n", __func__, index, atomic_read(&mm->num_ribbons));
         ribbon_kill(index, mm);
     }
 }
@@ -217,7 +217,7 @@ int ribbon_join_memdom(int memdom_id, int ribbon_id){
     set_bit(memdom_id, ribbon->memdom_bitmapJoin);
     mutex_unlock(&ribbon->ribbon_mutex);
 
-    printk(KERN_INFO "[%s] ribbon id %d joined memdom %d\n", __func__, ribbon_id, memdom_id);
+    slog(KERN_INFO "[%s] ribbon id %d joined memdom %d\n", __func__, ribbon_id, memdom_id);
     return 0;
 }
 EXPORT_SYMBOL(ribbon_join_memdom);
@@ -232,7 +232,7 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
         return -1;
     }
 
-    printk(KERN_ERR "[%s] ribbon %d leaving memdom %d\n", __func__, ribbon_id, memdom_id);
+    slog(KERN_INFO "[%s] ribbon %d leaving memdom %d\n", __func__, ribbon_id, memdom_id);
 
     /* mm is not NULL is called by ribbon_kill() */
     if( mm == NULL ) {
@@ -248,7 +248,7 @@ int ribbon_leave_memdom(int memdom_id, int ribbon_id, struct mm_struct *mm){
         printk(KERN_ERR "[%s] memdom %p || ribbon %p not found\n", __func__, memdom, ribbon);
         return -1;
     }
-    printk(KERN_ERR "[%s] memdom %p, ribbon %p\n", __func__, memdom, ribbon);
+    slog(KERN_INFO "[%s] memdom %p, ribbon %p\n", __func__, memdom, ribbon);
 
     /* Clear ribbon_id-th bit in the bitmap for memdom */
     mutex_lock(&memdom->memdom_mutex);
@@ -395,7 +395,7 @@ pgd_t *ribbon_alloc_pgd(struct mm_struct *mm, int ribbon_id){
     /* Assign page table directory to mm_struct for ribbon_id */
     mm->pgd_ribbon[ribbon_id] = pgd;
 
-    printk(KERN_INFO "[%s] ribbon %d pgd %p\n", __func__, ribbon_id, mm->pgd_ribbon[ribbon_id]);
+    slog(KERN_INFO "[%s] ribbon %d pgd %p\n", __func__, ribbon_id, mm->pgd_ribbon[ribbon_id]);
     return pgd;
 }
 
@@ -447,8 +447,8 @@ void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id){
      * Question: should we shootdown TLB? 
      */
     else {
-        printk(KERN_INFO "[%s] Free pgtables for ribbon %d\n", __func__, ribbon_id);
-        printk(KERN_INFO "[%s] Before ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
+        slog(KERN_INFO "[%s] Free pgtables for ribbon %d\n", __func__, ribbon_id);
+        slog(KERN_INFO "[%s] Before ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
                 __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
         tlb_gather_mmu(&tlb, mm, 0, -1);
         update_hiwater_rss(mm);
@@ -464,7 +464,7 @@ void ribbon_free_mmap(struct mm_struct *mm, int ribbon_id){
         ribbon_free_pgtables(&tlb, vma, FIRST_USER_ADDRESS, USER_PGTABLES_CEILING);       
 
        	tlb_finish_mmu(&tlb, 0, -1);
-        printk(KERN_INFO "[%s] After ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
+        slog(KERN_INFO "[%s] After ribbon_free_mmap mm: %p, nr_pmds: %ld, nr_ptes: %ld\n", 
                 __func__, mm, atomic_long_read(&mm->nr_pmds), atomic_long_read(&mm->nr_ptes));
     }
 }

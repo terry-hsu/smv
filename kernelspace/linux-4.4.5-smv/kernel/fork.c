@@ -652,7 +652,7 @@ static void check_mm(struct mm_struct *mm)
 {
 	int i;
 	if (mm->using_smv) {
-		printk(KERN_INFO "[%s] %s ribbon %d checking mm %p\n", __func__, current->comm, current->ribbon_id, mm);
+		slog(KERN_INFO "[%s] %s ribbon %d checking mm %p\n", __func__, current->comm, current->ribbon_id, mm);
 	}
 
 	for (i = 0; i < NR_MM_COUNTERS; i++) {
@@ -698,7 +698,7 @@ struct mm_struct *mm_alloc(void)
 void __mmdrop(struct mm_struct *mm)
 {
 	if (mm->using_smv) {
-		printk(KERN_INFO "[%s] %s in ribbon %d mm: %p\n", __func__, current->comm, current->ribbon_id, mm);
+		slog(KERN_INFO "[%s] %s in ribbon %d mm: %p\n", __func__, current->comm, current->ribbon_id, mm);
 	}
 	BUG_ON(mm == &init_mm);
 	mm_free_pgd(mm);
@@ -1442,6 +1442,8 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	} else {
 		p->ribbon_id = -1;
 	}
+	/* Initialize mmap_memdom_id to -1 */
+	p->mmap_memdom_id = -1;
 
 	/* Perform scheduler related setup. Assign this task to a CPU. */
 	retval = sched_fork(clone_flags, p);
@@ -1791,7 +1793,7 @@ long _do_fork(unsigned long clone_flags,
 	 */
 	if (current->mm) {
 		if ( current->mm->standby_ribbon_id != -1 ) {
-			printk(KERN_INFO "[%s] forked ribbon thread running in ribbon %d\n", __func__, current->mm->standby_ribbon_id);
+			slog(KERN_INFO "[%s] forked ribbon thread running in ribbon %d\n", __func__, current->mm->standby_ribbon_id);
   			p->ribbon_id = current->mm->standby_ribbon_id;
 			current->mm->standby_ribbon_id = -1;
 		}

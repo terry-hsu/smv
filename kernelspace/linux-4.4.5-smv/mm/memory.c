@@ -3309,29 +3309,54 @@ static int handle_pte_fault(struct mm_struct *mm,
 	entry = *pte;
 	barrier();
 	if (!pte_present(entry)) {
+		if (mm->using_smv) {
+			slog(KERN_INFO "[%s] addr 0x%16lx not present\n", __func__, address);
+		}
 		if (pte_none(entry)) {
-			if (vma_is_anonymous(vma))
+			if (vma_is_anonymous(vma)){
+				if (mm->using_smv) {
+					slog(KERN_INFO "[%s] addr 0x%16lx pte_none, calling do_anonymous_page\n", __func__, address);
+				}
 				return do_anonymous_page(mm, vma, address,
 							 pte, pmd, flags);
-			else
+			} else {
+				if (mm->using_smv) {
+					slog(KERN_INFO "[%s] addr 0x%16lx pte_none, calling do_fault\n", __func__, address);
+				}
 				return do_fault(mm, vma, address, pte, pmd,
 						flags, entry);
+			}
+		}
+		if (mm->using_smv) {
+			slog(KERN_INFO "[%s] addr 0x%16lx, calling do_swap_page\n", __func__, address);
 		}
 		return do_swap_page(mm, vma, address,
 					pte, pmd, flags, entry);
 	}
 
-	if (pte_protnone(entry))
+	if (pte_protnone(entry)){
+		if (mm->using_smv) {
+			slog(KERN_INFO "[%s] addr 0x%16lx pte_protnone, calling do_numa_page\n", __func__, address);
+		}
 		return do_numa_page(mm, vma, address, entry, pte, pmd);
+	}
 
 	ptl = pte_lockptr(mm, pmd);
 	spin_lock(ptl);
-	if (unlikely(!pte_same(*pte, entry)))
+	if (unlikely(!pte_same(*pte, entry))){
+		if (mm->using_smv) {
+			slog(KERN_INFO "[%s] addr 0x%16lx !pte_same, pte_val(*pte) 0x%16lx\n", __func__, address, pte_val(*pte));
+		}
 		goto unlock;
+	}
 	if (flags & FAULT_FLAG_WRITE) {
-		if (!pte_write(entry))
+		if (!pte_write(entry)){
+			if (mm->using_smv) {
+				slog(KERN_INFO "[%s] addr 0x%16lx !pte_write, calling do_wp_page\n", __func__, address);
+			}
 			return do_wp_page(mm, vma, address,
 					pte, pmd, ptl, entry);
+		}
 		entry = pte_mkdirty(entry);
 	}
 	entry = pte_mkyoung(entry);
@@ -3371,15 +3396,11 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	if (unlikely(is_vm_hugetlb_page(vma)))
 		return hugetlb_fault(mm, vma, address, flags);
 
-	/* TODO: Add support for hugetlb pages */
-
 	/* Ribbon threads should use main thread's pgd to record fault 
 	 * Pthreads (ribbon_id == -1) should still use pgd_offset 
 	 */
-	if (mm->using_smv && current->ribbon_id > MAIN_THREAD) {
-		mutex_lock(&mm->smv_metadataMutex);
+	if (mm->using_smv && current->ribbon_id >= MAIN_THREAD) {
 		pgd = pgd_offset_ribbon(mm, address, MAIN_THREAD);
-		mutex_unlock(&mm->smv_metadataMutex);
 	} else {
 		pgd = pgd_offset(mm, address);
 	}
@@ -3472,18 +3493,32 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 	 */
 	pte = pte_offset_map(pmd, address);
 	rv =  handle_pte_fault(mm, vma, address, pte, pmd, flags);
-out:
 
+out:
 	/* Ribbon threads should copy the pgtables from the main thread
 	 * Pthreads (ribbon_id == -1) should still use pgd_offset 
 	 */
-	if (mm->using_smv && current->ribbon_id > MAIN_THREAD) {
-		/* Only copy page table to current ribbon if handle_pte_fault succeeds */
+	if (mm->using_smv && current->ribbon_id >= MAIN_THREAD) {
+		/* Only copy page table to current ribbon if handle_pte_fault succeeds. 
+		 * MAIN_THREAD will return immediately as it doesn't have to copy its own pgtables. */
 		if (rv == 0) {
+			/* FIXME: just pass pte to copy_pgtable_smv? */
 			copy_pgtable_smv(current->ribbon_id, MAIN_THREAD, address, flags, vma);
 		}
-	}
+		if (rv == 0) {
+			slog(KERN_INFO "[%s] addr 0x%16lx done\n", __func__, address);
+		} else{
+			slog(KERN_INFO "[%s] addr 0x%16lx failed\n", __func__, address);
+		}
+		if ( current->ribbon_id == MAIN_THREAD) {
+			slog(KERN_INFO "[%s] ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
+					__func__, current->ribbon_id, pgd_val(*pgd), pud_val(*pud), pmd_val(*pmd), pte_val(*pte));
+		}
+		slog(KERN_INFO "[%s] cr3: 0x%16lx, ribbon %d: mm->pgd: %p, mm->pgd_ribbon[%d]: %p, mm->pgd_ribbon[MAIN_THREAD]: %p\n", 
+				__func__, read_cr3(), current->ribbon_id, mm->pgd, current->ribbon_id, 
+				mm->pgd_ribbon[current->ribbon_id], mm->pgd_ribbon[MAIN_THREAD]);
 
+	}
 	return rv;
 }
 

@@ -105,17 +105,17 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
 
     /* Don't copy page table to the main thread */
     if ( dst_ribbon == MAIN_THREAD ) {
-        printk(KERN_INFO "[%s] ribbon %d attempts to overwrite main thread's page table. Skip\n", __func__, src_ribbon);
+        slog(KERN_INFO "[%s] ribbon %d attempts to overwrite main thread's page table. Skip\n", __func__, src_ribbon);
         return 0;
     }
     /* Source and destination ribbons cannot be the same */
     if ( dst_ribbon == src_ribbon ) {
-        printk(KERN_INFO "[%s] ribbon %d attempts to copy its own page table. Skip.\n", __func__, src_ribbon);
+        slog(KERN_INFO "[%s] ribbon %d attempts to copy its own page table. Skip.\n", __func__, src_ribbon);
         return 0;
     }
     /* Main thread should not call this function */
     if ( current->ribbon_id == MAIN_THREAD ) {
-        printk(KERN_INFO "[%s] main thread ribbon %d, skip\n", __func__, current->ribbon_id);
+        slog(KERN_INFO "[%s] main thread ribbon %d, skip\n", __func__, current->ribbon_id);
         return 0;
     }
 
@@ -176,17 +176,17 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
             }
     	    add_mm_rss_vec(mm, rss);
         }
-        printk(KERN_INFO "[%s] src_pte 0x%16lx(ribbon %d) != dst_pte 0x%16lx (ribbon %d) for addr 0x%16lx\n", __func__, pte_val(*src_pte), src_ribbon, pte_val(*dst_pte), dst_ribbon, address);
+        slog(KERN_INFO "[%s] src_pte 0x%16lx(ribbon %d) != dst_pte 0x%16lx (ribbon %d) for addr 0x%16lx\n", __func__, pte_val(*src_pte), src_ribbon, pte_val(*dst_pte), dst_ribbon, address);
     } else{
-        printk(KERN_INFO "[%s] src_pte (ribbon %d) == dst_pte (ribbon %d) for addr 0x%16lx\n", __func__, src_ribbon, dst_ribbon, address);
+        slog(KERN_INFO "[%s] src_pte (ribbon %d) == dst_pte (ribbon %d) for addr 0x%16lx\n", __func__, src_ribbon, dst_ribbon, address);
     }
 
     /* Set the actual value to be the same as the source pgtables for destination  */   
     set_pte_at(mm, address, dst_pte, *src_pte);
 
-    printk(KERN_INFO "[%s] src ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
+    slog(KERN_INFO "[%s] src ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
                 __func__, src_ribbon, pgd_val(*src_pgd), pud_val(*src_pud), pmd_val(*src_pmd), pte_val(*src_pte));
-    printk(KERN_INFO "[%s] dst ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
+    slog(KERN_INFO "[%s] dst ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
                 __func__, dst_ribbon, pgd_val(*dst_pgd), pud_val(*dst_pud), pmd_val(*dst_pmd), pte_val(*dst_pte));
   
     spin_unlock(dst_ptl);
@@ -200,9 +200,9 @@ unlock_src:
     pte_unmap(src_pte);
 
     if ( rv != 0 ) {
-        printk(KERN_ERR "[%s] Error: !dst_pud, address 0x%16lx\n", __func__, address);
+        slog(KERN_ERR "[%s] Error: !dst_pud, address 0x%16lx\n", __func__, address);
     } else{
-        printk(KERN_INFO "[%s] ribbon %d copied pte from MAIN_THREAD. addr 0x%16lx, *src_pte 0x%16lx, *dst_pte 0x%16lx\n", 
+        slog(KERN_INFO "[%s] ribbon %d copied pte from MAIN_THREAD. addr 0x%16lx, *src_pte 0x%16lx, *dst_pte 0x%16lx\n", 
                __func__, dst_ribbon, address, pte_val(*src_pte), pte_val(*dst_pte));
     }
 	mutex_unlock(&mm->smv_metadataMutex);

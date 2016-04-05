@@ -60,7 +60,7 @@ int memdom_create(void){
     /* Increase total number of memdom count in mm_struct */
     atomic_inc(&mm->num_memdoms);
 
-    printk(KERN_INFO "Created new memdom with ID %d, #memdom: %d / %d\n", 
+    slog(KERN_INFO "Created new memdom with ID %d, #memdom: %d / %d\n", 
             memdom_id, atomic_read(&mm->num_memdoms), SMV_ARRAY_SIZE);
     goto out;
 
@@ -154,7 +154,7 @@ int memdom_kill(int memdom_id, struct mm_struct *mm){
     atomic_dec(&mm->num_memdoms);
     mutex_unlock(&mm->smv_metadataMutex);
 
-    printk(KERN_INFO "[%s] Deleted memdom with ID %d, #memdoms: %d / %d\n", 
+    slog(KERN_INFO "[%s] Deleted memdom with ID %d, #memdoms: %d / %d\n", 
             __func__, memdom_id, atomic_read(&mm->num_memdoms), SMV_ARRAY_SIZE);
 
     return 0;
@@ -166,7 +166,7 @@ void free_all_memdoms(struct mm_struct *mm){
     int index = 0;
     while( atomic_read(&mm->num_memdoms) > 0 ){
         index = find_first_bit(mm->memdom_bitmapInUse, SMV_ARRAY_SIZE);
-        printk(KERN_INFO "[%s] killing memdom %d, remaining #memdom: %d\n", __func__, index, atomic_read(&mm->num_memdoms));
+        slog(KERN_INFO "[%s] killing memdom %d, remaining #memdom: %d\n", __func__, index, atomic_read(&mm->num_memdoms));
         memdom_kill(index, mm);
     }
 }
@@ -202,19 +202,19 @@ int memdom_priv_add(int memdom_id, int ribbon_id, int privs){
     mutex_lock(&memdom->memdom_mutex);
     if( privs & MEMDOM_READ ) {
         set_bit(ribbon_id, memdom->ribbon_bitmapRead);
-        printk(KERN_INFO "[%s] Added read privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+        slog(KERN_INFO "[%s] Added read privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
     }
     if( privs & MEMDOM_WRITE ) {
         set_bit(ribbon_id, memdom->ribbon_bitmapWrite);
-        printk(KERN_INFO "[%s] Added write privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+        slog(KERN_INFO "[%s] Added write privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
     }
     if( privs & MEMDOM_EXECUTE ) {
         set_bit(ribbon_id, memdom->ribbon_bitmapExecute);
-        printk(KERN_INFO "[%s] Added execute privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+        slog(KERN_INFO "[%s] Added execute privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
     }
     if( privs & MEMDOM_ALLOCATE ) {
         set_bit(ribbon_id, memdom->ribbon_bitmapAllocate);
-        printk(KERN_INFO "[%s] Added allocate privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+        slog(KERN_INFO "[%s] Added allocate privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
     }    
     mutex_unlock(&memdom->memdom_mutex);     
      
@@ -253,19 +253,19 @@ int memdom_priv_del(int memdom_id, int ribbon_id, int privs){
     mutex_lock(&memdom->memdom_mutex);
     if( privs & MEMDOM_READ ) {
         clear_bit(ribbon_id, memdom->ribbon_bitmapRead);
-        printk(KERN_INFO "[%s] Revoked read privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+        slog(KERN_INFO "[%s] Revoked read privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
     }
     if( privs & MEMDOM_WRITE ) {
         clear_bit(ribbon_id, memdom->ribbon_bitmapWrite);
-        printk(KERN_INFO "[%s] Revoked write privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+        slog(KERN_INFO "[%s] Revoked write privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
     }
     if( privs & MEMDOM_EXECUTE ) {
         clear_bit(ribbon_id, memdom->ribbon_bitmapExecute);
-        printk(KERN_INFO "[%s] Revoked execute privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+        slog(KERN_INFO "[%s] Revoked execute privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
     }
     if( privs & MEMDOM_ALLOCATE ) {
         clear_bit(ribbon_id, memdom->ribbon_bitmapAllocate);
-        printk(KERN_INFO "[%s] Revoked allocate privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
+        slog(KERN_INFO "[%s] Revoked allocate privilege for ribbon %d in memdmo %d\n", __func__, ribbon_id, memdom_id);
     }            
     mutex_unlock(&memdom->memdom_mutex);
 
@@ -317,7 +317,7 @@ int memdom_priv_get(int memdom_id, int ribbon_id){
     }
     mutex_unlock(&memdom->memdom_mutex);
 
-    printk(KERN_INFO "[%s] ribbon %d has privs %x in memdom %d\n", __func__, ribbon_id, privs, memdom_id);
+    slog(KERN_INFO "[%s] ribbon %d has privs %x in memdom %d\n", __func__, ribbon_id, privs, memdom_id);
     return privs;
 }
 EXPORT_SYMBOL(memdom_priv_get);
@@ -359,7 +359,7 @@ int memdom_claim_all_vmas(int memdom_id){
     }
    	up_write(&mm->mmap_sem);
 
-    printk(KERN_INFO "[%s] Initialized %d vmas to be in memdom %d\n", __func__, vma_count, memdom_id);
+    slog(KERN_INFO "[%s] Initialized %d vmas to be in memdom %d\n", __func__, vma_count, memdom_id);
     return 0;
 }
 

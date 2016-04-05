@@ -1057,6 +1057,13 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
 	if (vm_flags & VM_SPECIAL)
 		return NULL;
 
+	/*
+	 * Do not merge a memdom protected vma
+	 */
+	if (vm_flags & VM_MEMDOM) {
+		return NULL;
+	}
+
 	if (prev)
 		next = prev->vm_next;
 	else
@@ -1609,7 +1616,15 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
 	vma->vm_page_prot = vm_get_page_prot(vm_flags);
 	vma->vm_pgoff = pgoff;
 	INIT_LIST_HEAD(&vma->anon_vma_chain);
-    vma->memdom_id = MAIN_THREAD; // make new vma the main thread's
+
+	/* TODO: figure out how to set memdom_id correctly? */
+	vma->memdom_id = MAIN_THREAD; 
+	if ( vm_flags & VM_MEMDOM ) {
+
+	} 
+	else {
+
+	}
 
 	if (file) {
 		if (vm_flags & VM_DENYWRITE) {
@@ -2417,7 +2432,9 @@ static void unmap_region(struct mm_struct *mm,
 		do {
 			ribbon_id = find_next_bit(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE, (ribbon_id + 1) );		
 			if (ribbon_id != SMV_ARRAY_SIZE) {
-				printk(KERN_INFO "[%s] getting rid of page table information for ribbon %d\n", __func__, ribbon_id);
+				slog(KERN_INFO "[%s] ribbon %d [0x%16lx to 0x%16lx]\n", __func__, ribbon_id, 
+						prev ? prev->vm_end : FIRST_USER_ADDRESS,
+						next ? next->vm_start : USER_PGTABLES_CEILING );
 				tlb.ribbon_id = ribbon_id;
 				unmap_vmas(&tlb, vma, start, end);
 				/* Only the main thread should touch vma in free_pgtables */
@@ -2876,7 +2893,7 @@ void exit_mmap(struct mm_struct *mm)
 	unsigned long nr_accounted = 0;
 
 	if (mm->using_smv) {
-		printk(KERN_INFO "[%s] %s in ribbon %d mm: %p\n", __func__, current->comm, current->ribbon_id, mm);
+		slog(KERN_INFO "[%s] %s in ribbon %d mm: %p\n", __func__, current->comm, current->ribbon_id, mm);
 	}
 	/* mm's last user has gone, and its about to be pulled down */
 	mmu_notifier_release(mm);
