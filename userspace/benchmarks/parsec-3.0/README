@@ -1,0 +1,7 @@
+PARSEC Benchmark Suite 3.0
+==========================
+
+Please download the original PARSEC 3.0 from their website and
+replace the benchmark source files in pkgs/ as needed.
+
+
