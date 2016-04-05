@@ -4,11 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <pthread.h>
 #include <ribbon_lib.h>
 #include <memdom_lib.h>
-#include <pthread.h>
 #define NUM_THREADS 10
-#define NUM_RIBBONS_PER_THREAD 100
+#define NUM_RIBBONS_PER_THREAD 5
 
 // Thread stack for creating ribbons
 void *fn(void *args){
@@ -22,6 +22,7 @@ void *fn(void *args){
             ribbon_kill(ribbon_id[i]);
         }
     }
+    printf("Hi!\n");
     return NULL;
 }
 
@@ -30,9 +31,10 @@ int main(){
     int ribbon_id[NUM_RIBBONS_PER_THREAD];
     pthread_t tid[NUM_THREADS];
 
-    ribbon_main_init();
+    ribbon_main_init(1);
 
     for (i = 0; i < NUM_THREADS; i++) {
+        fprintf(stderr, "creating %d thread\n", i);
         pthread_create(&tid[i], NULL, fn, NULL);
     }
 
@@ -51,8 +53,9 @@ int main(){
         pthread_join(tid[i], NULL);
     }
 
-    // Try delete a non-existing ribbon
+    // Try delete a non-existing ribbon/memdom
     ribbon_kill(12345);
+    memdom_kill(1025);
 
     printf("main memdom id: %d\n", memdom_main_id());
     return 0;

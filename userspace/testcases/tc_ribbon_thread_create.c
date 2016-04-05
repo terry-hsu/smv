@@ -15,13 +15,13 @@
 // Each thread write to 1 page
 void *fn(void *args){
     int i = 0;
-    int j[1024];    
+    int j[1024];
     for (i = 0; i < 1024; i++) {
         j[i] = i;
         if (i % 1000 == 0) {
             printf("j[%d] = %d\n", i, j[i]);
         }
-    }    
+    }
     return NULL;
 }
 
@@ -31,7 +31,7 @@ int main(){
     int ribbon_id[NUM_THREADS];
     pthread_t tid[NUM_THREADS];
 
-    ribbon_main_init();
+    ribbon_main_init(0);
 
     int memdom_id = memdom_create();
     int privs = 0;
@@ -39,18 +39,15 @@ int main(){
     // main thread create ribbons
     for (i = 0; i < NUM_THREADS; i++) {
         ribbon_id[i] = ribbon_create();
+        ribbon_join_domain(0, ribbon_id[i]);
+        memdom_priv_add(0, ribbon_id[i], MEMDOM_READ | MEMDOM_WRITE);
     }
 
     for (i = 0; i < NUM_THREADS; i++) {
         rv = ribbon_thread_create(ribbon_id[i], &tid[i], fn, NULL);
-        if (rv) {
+        if (rv == -1) {
             printf("ribbon_thread_create error\n");
         }
-    }
-   
-    ribbon_join_domain(memdom_id, ribbon_id[0]);
-    if (ribbon_is_in_domain(memdom_id, ribbon_id[0])) {
-        printf("ribbon %d joined memdom %d\n", ribbon_id[0], memdom_id);        
     }
 
     /* Add privilege and delete them in serve order */
