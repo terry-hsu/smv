@@ -51,7 +51,7 @@ void *memdom_mmap(int memdom_id,
     /* Call the actual mmap with memdom flag */
     flags |= MAP_MEMDOM;
     base = (void*) mmap(NULL, len, prot, flags, fd, pgoff);
-    if( !base ) {
+    if( base == MAP_FAILED ) {
         perror("memdom_mmap: ");
         return NULL;
     }
