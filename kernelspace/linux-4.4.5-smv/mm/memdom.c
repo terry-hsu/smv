@@ -322,18 +322,39 @@ int memdom_priv_get(int memdom_id, int ribbon_id){
 }
 EXPORT_SYMBOL(memdom_priv_get);
 
+/* User space signals the kernel what memdom a mmap call is for */
+int memdom_mmap_register(int memdom_id){    
+    struct memdom_struct *memdom; 
+    struct mm_struct *mm = current->mm;
 
-unsigned long memdom_alloc(int memdom_id, unsigned long sz){
+    if( memdom_id > LAST_MEMDOM_INDEX ) {
+        printk(KERN_ERR "[%s] Error, out of bound: memdom %d\n", __func__, memdom_id);
+        return -1;
+    }
+
+    mutex_lock(&mm->smv_metadataMutex);
+    memdom = current->mm->memdom_metadata[memdom_id];
+    mutex_unlock(&mm->smv_metadataMutex);
+
+    if( !memdom ) {
+        printk(KERN_ERR "[%s] memdom %p not found\n", __func__, memdom);
+        return -1;
+    }       
+    
+    /* TODO: privilege checks */
+
+    /* Record memdom_id for mmap to use */
+    current->mmap_memdom_id = memdom_id;
 
     return 0;
 }
-EXPORT_SYMBOL(memdom_alloc);
+EXPORT_SYMBOL(memdom_mmap_register);
 
-unsigned long memdom_free(unsigned long addr){
+unsigned long memdom_munmap(unsigned long addr){
 
     return 0;
 }
-EXPORT_SYMBOL(memdom_free);
+EXPORT_SYMBOL(memdom_munmap);
 
 /* Return the memdom id used by the master thread (global memdom) */
 int memdom_main_id(void){

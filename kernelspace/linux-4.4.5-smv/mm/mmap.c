@@ -1061,6 +1061,7 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
 	 * Do not merge a memdom protected vma
 	 */
 	if (vm_flags & VM_MEMDOM) {
+		printk(KERN_INFO "[%s] ribbon %d vm_flags %lx & VM_MEMDOM, skip merging vma\n", __func__, current->ribbon_id, vm_flags);
 		return NULL;
 	}
 
@@ -1412,6 +1413,15 @@ unsigned long do_mmap(struct file *file, unsigned long addr,
 			vm_flags |= VM_NORESERVE;
 	}
 
+	/*
+	 * Set MEMDOM flag if the vma is protected by a memory domain 
+	 */
+	if (mm->using_smv) {
+		if (flags & MAP_MEMDOM) {
+			vm_flags |= VM_MEMDOM;
+		}
+	}
+
 	addr = mmap_region(file, addr, len, vm_flags, pgoff);
 	if (!IS_ERR_VALUE(addr) &&
 	    ((vm_flags & VM_LOCKED) ||
@@ -1426,6 +1436,10 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
 {
 	struct file *file = NULL;
 	unsigned long retval;
+
+	if (current->mm->using_smv) {
+		printk(KERN_INFO "[%s] addr: %lx, len: %lx, prot: %lx, flags: %lx\n", __func__, addr, len, prot, flags);
+	}
 
 	if (!(flags & MAP_ANONYMOUS)) {
 		audit_mmap_fd(fd, flags);
@@ -1617,13 +1631,14 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
 	vma->vm_pgoff = pgoff;
 	INIT_LIST_HEAD(&vma->anon_vma_chain);
 
-	/* TODO: figure out how to set memdom_id correctly? */
-	vma->memdom_id = MAIN_THREAD; 
+	/* Set memdom_id correctly. 
+	 * User space call memdom_mmap_register to store memdom_id for mmap in current */
 	if ( vm_flags & VM_MEMDOM ) {
-
-	} 
-	else {
-
+		vma->memdom_id = current->mmap_memdom_id;	
+		current->mmap_memdom_id = -1; // reset to -1
+		printk(KERN_INFO "[%s] ribbon %d allocated vma in memdom %d\n", __func__, current->ribbon_id, vma->memdom_id);
+	} else {
+		vma->memdom_id = MAIN_THREAD; 
 	}
 
 	if (file) {

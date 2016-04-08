@@ -59,17 +59,17 @@ int memdom_internal_function_dispatcher(int memdom_op, long memdom_id1,
         rc = memdom_kill(memdom_id1, NULL);        
     }
     else if(memdom_op == 2){        
-        printk(KERN_CRIT "[%s] memdom_alloc(%ld, 0x%lx, %ld)\n", __func__, memdom_id1, malloc_start, memdom_reqsize);
-        rc = memdom_alloc(memdom_id1, memdom_reqsize);
+        printk(KERN_CRIT "[%s] memdom_mmap_register(%ld)\n", __func__, memdom_id1);
+        rc = memdom_mmap_register(memdom_id1);
     }
     else if(memdom_op == 3){
-        printk("[%s] converting %s to unsigned long\n", __func__, memdom_data); 
-        rc = kstrtoul(memdom_data, 10, &memdom_data_addr);
-        if (rc) {
-            printk("[%s] Error: convert memdom_data address to unsigned long failed, returned %d\n", __func__, rc);
-        }
-        printk("[%s] memdom_free(%ld, 0x%08lx)\n", __func__, memdom_id1, memdom_data_addr); 
-        rc = memdom_free(memdom_data_addr);        
+//      printk("[%s] converting %s to unsigned long\n", __func__, memdom_data);
+//      rc = kstrtoul(memdom_data, 10, &memdom_data_addr);
+//      if (rc) {
+//          printk("[%s] Error: convert memdom_data address to unsigned long failed, returned %d\n", __func__, rc);
+//      }
+//      printk("[%s] memdom_munmap(%ld, 0x%08lx)\n", __func__, memdom_id1, memdom_data_addr);
+//      rc = memdom_munmap(memdom_data_addr);
     }
     else if(memdom_op == 4){      
         if(memdom_priv_op == 0){            
@@ -121,7 +121,7 @@ int parse_message(char* message){
     char **buf;
     char *token;
     int message_type = -1;      /* message type: 0: memdom, 1: ribbon, -1: undefined */
-    int memdom_op = -1;         /* 0: create, 1: kill, 2: allocate, 3: free, 4: priv, -1: undefined */
+    int memdom_op = -1;         /* 0: create, 1: kill, 2: mmap, 3: unmap, 4: priv, -1: undefined */
     long memdom_priv_op = -1;    /* 0: get, 1: add, 2: del, 3: mod, -1: undefined */
     long memdom_priv_value = -1;
     long memdom_id1 = -1;
@@ -171,9 +171,9 @@ int parse_message(char* message){
                 memdom_op = 0;
             else if( (strcmp(token, "kill")) == 0 )
                 memdom_op = 1;
-            else if( (strcmp(token, "alloc")) == 0 )
+            else if( (strcmp(token, "mmapregister")) == 0 )
                 memdom_op = 2;
-            else if( (strcmp(token, "free")) == 0 )
+            else if( (strcmp(token, "munmap")) == 0 )
                 memdom_op = 3;
             else if( (strcmp(token, "priv")) == 0 )
                 memdom_op = 4;
@@ -242,16 +242,17 @@ int parse_message(char* message){
             printk(KERN_CRIT "memdom token 4: %s\n", token);
 
             // memdom allocate, get nbytes
+            // deprecated, implemented in user space library
             if( memdom_op == 2){
-                if( kstrtol(token, 10, &memdom_nbytes) )
-                    return -1;
+//              if( kstrtol(token, 10, &memdom_nbytes) )
+//                  return -1;
             }
-            // memdom free, get *data
+            // memdom munmap, get *data
             else if( memdom_op == 3){
-                memdom_data = token;
+//              memdom_data = token;
             }
             // memdom priv, get ribbonID
-            else if( memdom_op == 4){
+            if( memdom_op == 4){
                 if( kstrtol(token, 10, &ribbon_id) )
                     return -1;
             }

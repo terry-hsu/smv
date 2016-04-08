@@ -57,8 +57,8 @@ int memdom_kill(int memdom_id, struct mm_struct *mm);
 int memdom_priv_add(int memdom_id, int ribbon_id, int privs);
 int memdom_priv_del(int memdom_id, int ribbon_id, int privs);
 int memdom_priv_get(int memdom_id, int ribbon_id);
-unsigned long memdom_alloc(int memdom_id, unsigned long sz);
-unsigned long memdom_free(unsigned long addr);
+int memdom_mmap_register(int memdom_id);
+unsigned long memdom_munmap(unsigned long addr);
 int memdom_main_id(void);
 
 #endif
