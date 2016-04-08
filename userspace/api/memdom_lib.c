@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
+#include <limits.h>
 #include "memdom_lib.h"
 
 /* Create memory domain and return it to user */
@@ -26,6 +28,36 @@ int memdom_kill(int memdom_id){
     }    
     rlog("Memdom ID %d killed\n", memdom_id);
     return rv;
+}
+
+/* mmap memory in memdom */
+void *memdom_mmap(int memdom_id,
+                  unsigned long addr, unsigned long len, 
+                  unsigned long prot, unsigned long flags, 
+                  unsigned long fd, unsigned long pgoff){
+    void *base = NULL;
+    int rv = 0;
+    char buf[50];
+
+    /* Store memdom id in current->mmap_memdom_id in kernel */
+    sprintf(buf, "memdom,mmapregister,%d", memdom_id);
+    rv = message_to_kernel(buf);
+    if( rv == -1 ){
+		fprintf(stderr, "memdom_mmap_register(%d) failed\n", memdom_id);
+        return NULL;
+    }    
+    rlog("Memdom ID %d registered for mmap\n", memdom_id);
+    
+    /* Call the actual mmap with memdom flag */
+    flags |= MAP_MEMDOM;
+    base = (void*) mmap(NULL, len, prot, flags, fd, pgoff);
+    if( !base ) {
+        perror("memdom_mmap: ");
+        return NULL;
+    }
+    rlog("Memdom ID %d mmaped at %p\n", memdom_id, base);
+
+    return base;
 }
 
 /* Allocate npages pages in memory domain memdom */

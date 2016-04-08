@@ -7,6 +7,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/mman.h>
+#include <limits.h>
 #include "ribbon_lib.h"
 
 pthread_mutex_t create_thread_mutex;
@@ -129,6 +131,10 @@ int ribbon_exists(int ribbon_id) {
 int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args){
 	int rv = 0;
 	char buf[100];
+	int memdom_id;
+    pthread_attr_t attr;    
+	void *stack_base;
+	unsigned long stack_size;
 
 	/* When caller specify ribbon_id = -1, ribbon_thread_create automatically creates a new ribbon 
 	 * for the about-to-run thread to running in. 
@@ -153,6 +159,35 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 	/* Atomic operation */
 	pthread_mutex_lock(&create_thread_mutex);
 
+
+	/* Create a thread-local memdom and make ribbon join it */
+	memdom_id = memdom_create();
+	if (memdom_id == -1) {
+		fprintf(stderr, "failed to create thread local memdom for ribbon %d\n", ribbon_id);		
+		pthread_mutex_unlock(&create_thread_mutex);
+		return -1;
+	}
+	/* Join this newly created memdom for this ribbon */
+	ribbon_join_domain(memdom_id, ribbon_id);
+	memdom_priv_add(memdom_id, ribbon_id, MEMDOM_READ | MEMDOM_WRITE | MEMDOM_ALLOCATE | MEMDOM_EXECUTE);
+
+	/* Make the main thread join this new memdom in order to set up the stack properly */
+	ribbon_join_domain(memdom_id, 0);
+	memdom_priv_add(memdom_id, 0, MEMDOM_READ | MEMDOM_WRITE | MEMDOM_ALLOCATE | MEMDOM_EXECUTE);
+
+	/* Setup thread local stack */
+	stack_size = PTHREAD_STACK_MIN + 0x8000;
+	stack_base = (void*) memdom_mmap(memdom_id, 0, stack_size, PROT_READ | PROT_WRITE, 
+									 MAP_PRIVATE | MAP_ANONYMOUS | MAP_MEMDOM, 0, 0);
+	if (stack_base == MAP_FAILED) {
+		perror("mmap for thread stack: ");
+		pthread_mutex_unlock(&create_thread_mutex);
+		return -1;
+	}
+	pthread_attr_init(&attr);
+	pthread_attr_setstack(&attr, stack_base, stack_size);
+	printf("creating thread with stack base: 0x%p, size: 0x%lx\n", stack_base, stack_size);
+
 	/* Tell the kernel we are going to create a pthread, that is actually an smv thread
 	 * The kernel will set mm->standby_ribbon_id = ribbon_id */
 	sprintf(buf, "ribbon,registerthread,%d", ribbon_id);
@@ -163,13 +198,12 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 		return -1;
 	}
 
-	
 #ifdef INTERCEPT_PTHREAD_CREATE
 #undef pthread_create
 #endif
 	/* Create a pthread (kernel knows it's a ribbon thread because we registered a ribbon id for this thread */
 	/* Use the real pthread_create */
-	rv = pthread_create(tid, NULL, fn, args);
+	rv = pthread_create(tid, &attr, fn, args);
 	if (rv) {
 		fprintf(stderr, "pthread_create for ribbon %d failed\n", ribbon_id);		
 		pthread_mutex_unlock(&create_thread_mutex);
@@ -183,6 +217,9 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 	/* ReDefine pthread_create to be ribbon_thread_create again */
 #define pthread_create(tid, attr, fn, args) ribbon_thread_create(NEW_RIBBON, tid, fn, args)
 #endif
+
+	/* Main thread should leave the thread's memdom after the setup */
+	ribbon_leave_domain(memdom_id, 0);
 
 	pthread_mutex_unlock(&create_thread_mutex);
 
