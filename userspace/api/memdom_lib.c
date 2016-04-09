@@ -44,6 +44,7 @@ int memdom_kill(int memdom_id){
     while( free_list ) {
         struct free_list_struct *tmp = free_list;
         free_list = free_list->next;
+        printf("freeing free_list addr: %p, size: 0x%lx bytes\n", tmp->addr, tmp->size);
         free(tmp);
     }
 
@@ -361,10 +362,12 @@ out:
 void memdom_free(void* data){
     struct block_header_struct header;
     char *memblock = NULL;
+    int memdom_id = -1;
 
     /* Read the header stored ahead of the actual data */
     memblock = (char*) data - sizeof(struct block_header_struct);
     memcpy(&header, memblock, sizeof(struct block_header_struct));
+    memdom_id = header.memdom_id;
 
     pthread_mutex_lock(&memdom[memdom_id]->mlock);
  
