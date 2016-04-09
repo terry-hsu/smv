@@ -175,10 +175,12 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 	ribbon_join_domain(memdom_id, 0);
 	memdom_priv_add(memdom_id, 0, MEMDOM_READ | MEMDOM_WRITE | MEMDOM_ALLOCATE | MEMDOM_EXECUTE);
 
-	/* Setup thread local stack */
+	/* Setup thread local stack 
+	 * Here we are using mmap for the newly created memdom, no contention is possible, so don't lock memdom lock 
+	 */
 	stack_size = PTHREAD_STACK_MIN + 0x8000;
 	stack_base = (void*) memdom_mmap(memdom_id, 0, stack_size, PROT_READ | PROT_WRITE, 
-									 MAP_PRIVATE | MAP_ANONYMOUS | MAP_MEMDOM, 0, 0);
+									 MAP_PRIVATE | MAP_ANONYMOUS | MAP_MEMDOM, 0, 0);	
 	if (stack_base == MAP_FAILED) {
 		perror("mmap for thread stack: ");
 		pthread_mutex_unlock(&create_thread_mutex);
@@ -187,6 +189,10 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 	pthread_attr_init(&attr);
 	pthread_attr_setstack(&attr, stack_base, stack_size);
 	printf("creating thread with stack base: 0x%p, size: 0x%lx\n", stack_base, stack_size);
+
+	/* Record thread-private memdom addr and size */
+	memdom[memdom_id]->start = stack_base;
+	memdom[memdom_id]->total_size = stack_size;
 
 	/* Tell the kernel we are going to create a pthread, that is actually an smv thread
 	 * The kernel will set mm->standby_ribbon_id = ribbon_id */

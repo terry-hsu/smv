@@ -13,6 +13,15 @@ int memdom_create(){
 		fprintf(stderr, "memdom_create() failed\n");
         return -1;
     }
+    /* Allocate metadata to hold memdom info */
+    memdom[memdom_id] = (struct memdom_metadata_struct*) malloc(sizeof(struct memdom_metadata_struct));
+    memdom[memdom_id]->memdom_id = memdom_id;
+    memdom[memdom_id]->start = NULL; // memdom_alloc will do the actual mmap
+    memdom[memdom_id]->total_size = 0;
+    memdom[memdom_id]->free_list_head = NULL;
+    memdom[memdom_id]->free_list_tail = NULL;
+    pthread_mutex_init(&memdom[memdom_id]->mlock, NULL);
+
     return memdom_id;
 }
 
@@ -20,6 +29,28 @@ int memdom_create(){
 int memdom_kill(int memdom_id){
     int rv = 0;
     char buf[50];
+    struct free_list_struct *free_list;
+
+    /* Free mmap */
+    if( !memdom[memdom_id]->start ) {
+        rv = munmap(memdom[memdom_id]->start, memdom[memdom_id]->total_size);
+        if( rv != 0 ) {
+            fprintf(stderr, "memdom munmap failed, start: %p, sz: 0x%lx bytes\n", memdom[memdom_id]->start, memdom[memdom_id]->total_size);
+        }
+    }
+
+    /* Free all free_list_struct in this memdom */
+    free_list = memdom[memdom_id]->free_list_head;
+    while( free_list ) {
+        struct free_list_struct *tmp = free_list;
+        free_list = free_list->next;
+        free(tmp);
+    }
+
+    /* Free memdom metadata */
+    free(memdom[memdom_id]);
+    
+    /* Send kill memdom info to kernel */
     sprintf(buf, "memdom,kill,%d", memdom_id);
     rv = message_to_kernel(buf);
     if( rv == -1 ){
@@ -30,7 +61,9 @@ int memdom_kill(int memdom_id){
     return rv;
 }
 
-/* mmap memory in memdom */
+/* mmap memory in memdom 
+ * Caller should hold memdom lock
+ */
 void *memdom_mmap(int memdom_id,
                   unsigned long addr, unsigned long len, 
                   unsigned long prot, unsigned long flags, 
@@ -55,21 +88,13 @@ void *memdom_mmap(int memdom_id,
         perror("memdom_mmap: ");
         return NULL;
     }
+    memdom[memdom_id]->start = base;
+    memdom[memdom_id]->total_size = len;
+
     rlog("Memdom ID %d mmaped at %p\n", memdom_id, base);
 
+    printf("[%s] memdom %d mmaped 0x%lx bytes at %p\n", __func__, memdom_id, len, base);
     return base;
-}
-
-/* Allocate npages pages in memory domain memdom */
-void *memdom_alloc(int memdom_id, unsigned long nbytes){
-    void *memblock = NULL;
-
-    return memblock;   
-}
-
-/* Deallocate data in memory domain memdom */
-void memdom_free(int memdom_id, void* data){
-
 }
 
 /* Return privilege status of ribbon rib in memory domain memdom */
@@ -147,3 +172,189 @@ int memdom_main_id(void){
     rlog("Global memdom id: %d\n", rv);    
     return rv;
 }
+
+void dumpFreeList(int memdom_id){
+    struct free_list_struct *walk = memdom[memdom_id]->free_list_head;
+    while ( walk ) {
+        printf("[%s] memdom %d free_list addr: %p, sz: 0x%lx\n", 
+                __func__, memdom_id, walk->addr, walk->size);
+        walk = walk->next;
+    }
+}
+
+/* Insert a free list struct to the head of memdom free list 
+ * Reclaimed chunks are inserted to head
+ */
+void free_list_insert_to_head(int memdom_id, struct free_list_struct *new_free_list){
+    int rv;
+    struct free_list_struct *head = memdom[memdom_id]->free_list_head;
+    if( head ) {
+        new_free_list->next = head;
+    }
+    memdom[memdom_id]->free_list_head = new_free_list;
+}
+
+/* Initialize free list */
+void free_list_init(int memdom_id){
+    struct free_list_struct *new_free_list;
+
+    /* The first free list should be the entire mmap region */
+    new_free_list = (struct free_list_struct*) malloc (sizeof(struct free_list_struct));
+    new_free_list->addr = memdom[memdom_id]->start;
+    new_free_list->size = memdom[memdom_id]->total_size;   
+    new_free_list->next = NULL;
+    memdom[memdom_id]->free_list_head = NULL;   // reclaimed chunk are inserted to head   
+    memdom[memdom_id]->free_list_tail = new_free_list; 
+    printf("[%s] memdom %d: free_list addr: %p, size: 0x%lx bytes\n", __func__, memdom_id, new_free_list->addr, new_free_list->size);
+}
+
+/* Round up the number to the nearest multiple */
+unsigned long round_up(unsigned long numToRound, int multiple){
+    int remainder = 0;
+    if( multiple == 0 ) {
+        return 0;
+    }
+    remainder = numToRound % multiple;
+    if( remainder == 0 ) {
+        return numToRound;
+    }
+    return numToRound + multiple - remainder;
+}
+
+/* Allocate memory in memory domain memdom */
+void *memdom_alloc(int memdom_id, unsigned long sz){
+    char *memblock = NULL;
+    struct free_list_struct *free_list = NULL;
+
+    pthread_mutex_lock(&memdom[memdom_id]->mlock);
+
+    printf("[%s] memdom %d allocating sz 0x%lx bytes\n", __func__, memdom_id, sz);
+
+    /* First time this memdom allocates memory */
+    if( !memdom[memdom_id]->start ) {
+        /* Call mmap to set up initial memory region */
+        memblock = (char*) memdom_mmap(memdom_id, 0, MEMDOM_HEAP_SIZE, 
+                                       PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_MEMDOM, 0, 0);
+        if( memblock == MAP_FAILED ) {
+            fprintf(stderr, "Failed to memdom_alloc using mmap for memdom %d\n", memdom_id);
+            memblock = NULL;
+            goto out;
+        }
+
+        /* Initialize free list */
+        free_list_init(memdom_id);
+    }
+
+    /* Round up size to multiple of cache line size: 64B */
+    sz = round_up(sz, CHUNK_SIZE);
+    printf("[%s] request rounded to 0x%lx bytes\n", __func__, sz);
+
+    /* Get memory from the tail of free list, if the last free list is not available for allocation,
+     * start searching the free list from the head until first fit is found.
+     */
+    free_list = memdom[memdom_id]->free_list_tail;
+
+    /* Allocate from tail: 
+     * check if the last element in free list is available, 
+     * allocate memory from it */
+    printf("[%s] memdom %d search from tail for 0x%lx bytes\n", __func__, memdom_id, sz);     
+    if ( free_list && sz <= free_list->size ) {
+        memblock = (char*)free_list->addr;
+
+        /* Adjust the last free list addr and size*/
+        free_list->addr = (char*)free_list->addr + sz;
+        free_list->size = free_list->size - sz;
+
+        printf("[%s] memdom %d last free list available, free_list addr: %p, remaining sz: 0x%lx bytes\n", 
+                __func__, memdom_id, free_list->addr, free_list->size);
+        /* Last chunk is now allocated, tail is not available from now */
+        if( free_list->size == 0 ) {
+            free(free_list);
+            memdom[memdom_id]->free_list_tail = NULL;
+            printf("[%s] free_list size is 0, freed this free_list_struct, the next allocate should request from free_list_head\n", __func__);
+        }
+        goto out;
+    }
+
+    /* Allocate from head: 
+     * ok the last free list is not available, 
+     * let's start searching from the head for the first fit */
+    printf("[%s] memdom %d search from head for 0x%lx bytes\n", __func__, memdom_id, sz);     
+    free_list = memdom[memdom_id]->free_list_head;
+    struct free_list_struct *prev = NULL;
+    while (free_list) {
+        if( prev ) {
+            printf("[%s] memdom %d prev->addr %p, prev->size 0x%lx bytes\n", __func__, memdom_id, prev->addr, prev->size);
+        }
+        if( free_list ) {
+            printf("[%s] memdom %d free_list->addr %p, free_list->size 0x%lx bytes\n", __func__, memdom_id, free_list->addr, free_list->size);
+        }
+        
+        /* Found free list! */
+        if( sz <= free_list->size ) {
+
+            /* Get memory address */
+            memblock = (char*)free_list->addr;
+
+            /* Adjust free list:
+             * if the remaining chunk size if greater then CHUNK_SIZE
+             */
+            if( free_list->size - sz >= CHUNK_SIZE ) {
+                char *ptr = (char*)free_list->addr;
+                ptr = ptr + sz;
+                free_list->addr = (void*)ptr;
+                free_list->size = free_list->size - sz;
+                printf("[%s] Adjust free list to addr %p, sz 0x%lx\n", 
+                        __func__, free_list->addr, free_list->size);
+            }
+            /* Remove this free list struct: 
+             * since there's no memory to allcoate frmo here anymore 
+             */
+            else{                
+                if ( free_list == memdom[memdom_id]->free_list_head ) {
+                    memdom[memdom_id]->free_list_head = NULL;
+                    printf("[%s] memdom %d set free_list_head to NULL\n", __func__, memdom_id);
+                }
+                else {
+                    prev->next = free_list->next;
+                    printf("[%s] memdom %d set prev->next to free_list->next\n", __func__, memdom_id);
+                }
+                free(free_list);
+
+                printf("[%s] memdom %d removed free list, no \n", __func__, memdom_id);
+            }
+            goto out;
+        }
+
+        /* Move pointer forward */
+        prev = free_list;
+        free_list = free_list->next;
+    }   
+
+    /* TODO: Record allocated memory to free later */
+
+   
+out:   
+    if( !memblock ) {
+        fprintf(stderr, "memdom_alloc failed: no memory can be allocated in memdom %d\n", memdom_id);
+    }
+    else{    
+        printf("[%s] allocated 0x%lx bytes at %p\n\n", __func__, sz, memblock);
+    }
+
+    pthread_mutex_unlock(&memdom[memdom_id]->mlock);
+    return (void*)memblock;
+}
+
+/* Deallocate data in memory domain memdom */
+void memdom_free(int memdom_id, void* data){
+
+    /* Look up the data size in record */
+
+    /* Free the memory */
+
+    /* Insert the block into free list head */
+
+    /* Remove data - size from record */
+}
+
