@@ -4,7 +4,8 @@ LIBS = -lsmv_lib -lpthread
 
 all: tc_ribbon_create tc_memdom_create \
 	 privs_t1 tc_ribbon_thread_create \
-	 tc_shared_mm tc_mutex tc_cond_var 
+	 tc_shared_mm tc_memdom_alloc \
+	 tc_mutex tc_cond_var 
 
 
 tc_ribbon_create:
@@ -26,6 +27,9 @@ tc_mutex:
 	$(GCC) $(CFLAGS) $@.c -o $@.o $(LIBS)
 
 tc_cond_var:
+	$(GCC) $(CFLAGS) $@.c -o $@.o $(LIBS)
+
+tc_memdom_alloc:
 	$(GCC) $(CFLAGS) $@.c -o $@.o $(LIBS)
 
 clean:
