@@ -173,7 +173,7 @@ int memdom_main_id(void){
     return rv;
 }
 
-void dumpFreeList(int memdom_id){
+void dumpFreeListHead(int memdom_id){
     struct free_list_struct *walk = memdom[memdom_id]->free_list_head;
     while ( walk ) {
         printf("[%s] memdom %d free_list addr: %p, sz: 0x%lx\n", 
@@ -192,6 +192,7 @@ void free_list_insert_to_head(int memdom_id, struct free_list_struct *new_free_l
         new_free_list->next = head;
     }
     memdom[memdom_id]->free_list_head = new_free_list;
+    printf("[%s] memdom %d inserted free list addr: %p, size: 0x%lx\n", __func__, memdom_id, new_free_list->addr, new_free_list->size);
 }
 
 /* Initialize free list */
@@ -245,8 +246,13 @@ void *memdom_alloc(int memdom_id, unsigned long sz){
         free_list_init(memdom_id);
     }
 
-    /* Round up size to multiple of cache line size: 64B */
-    sz = round_up(sz, CHUNK_SIZE);
+    /* Round up size to multiple of cache line size: 64B 
+     * Note that the size of should block_header + the actual data
+     * --------------------------------------
+     * | block header|      your data       |
+     * --------------------------------------
+     */
+    sz = round_up ( sz + sizeof(struct block_header_struct), CHUNK_SIZE);
     printf("[%s] request rounded to 0x%lx bytes\n", __func__, sz);
 
     /* Get memory from the tail of free list, if the last free list is not available for allocation,
@@ -280,6 +286,7 @@ void *memdom_alloc(int memdom_id, unsigned long sz){
      * ok the last free list is not available, 
      * let's start searching from the head for the first fit */
     printf("[%s] memdom %d search from head for 0x%lx bytes\n", __func__, memdom_id, sz);     
+    dumpFreeListHead(memdom_id);
     free_list = memdom[memdom_id]->free_list_head;
     struct free_list_struct *prev = NULL;
     while (free_list) {
@@ -308,12 +315,12 @@ void *memdom_alloc(int memdom_id, unsigned long sz){
                         __func__, free_list->addr, free_list->size);
             }
             /* Remove this free list struct: 
-             * since there's no memory to allcoate frmo here anymore 
+             * since there's no memory to allcoate from here anymore 
              */
             else{                
                 if ( free_list == memdom[memdom_id]->free_list_head ) {
-                    memdom[memdom_id]->free_list_head = NULL;
-                    printf("[%s] memdom %d set free_list_head to NULL\n", __func__, memdom_id);
+                    memdom[memdom_id]->free_list_head = memdom[memdom_id]->free_list_head->next;
+                    printf("[%s] memdom %d set free_list_head to free_list_head->next\n", __func__, memdom_id);
                 }
                 else {
                     prev->next = free_list->next;
@@ -321,7 +328,7 @@ void *memdom_alloc(int memdom_id, unsigned long sz){
                 }
                 free(free_list);
 
-                printf("[%s] memdom %d removed free list, no \n", __func__, memdom_id);
+                printf("[%s] memdom %d removed free list\n", __func__, memdom_id);
             }
             goto out;
         }
@@ -330,16 +337,20 @@ void *memdom_alloc(int memdom_id, unsigned long sz){
         prev = free_list;
         free_list = free_list->next;
     }   
-
-    /* TODO: Record allocated memory to free later */
-
    
 out:   
     if( !memblock ) {
         fprintf(stderr, "memdom_alloc failed: no memory can be allocated in memdom %d\n", memdom_id);
     }
     else{    
-        printf("[%s] allocated 0x%lx bytes at %p\n\n", __func__, sz, memblock);
+        /* Record allocated memory in the block header for free to use later */
+        struct block_header_struct header;
+        header.addr = (void*)memblock;
+        header.memdom_id = memdom_id;
+        header.size = sz;
+        memcpy(memblock, &header, sizeof(struct block_header_struct));
+        memblock = memblock + sizeof(struct block_header_struct);
+        printf("[%s] header: addr %p, allocated 0x%lx bytes and returning data addr %p\n", __func__, header.addr, sz, memblock);
     }
 
     pthread_mutex_unlock(&memdom[memdom_id]->mlock);
@@ -347,14 +358,29 @@ out:
 }
 
 /* Deallocate data in memory domain memdom */
-void memdom_free(int memdom_id, void* data){
+void memdom_free(void* data){
+    struct block_header_struct header;
+    char *memblock = NULL;
 
-    /* Look up the data size in record */
+    /* Read the header stored ahead of the actual data */
+    memblock = (char*) data - sizeof(struct block_header_struct);
+    memcpy(&header, memblock, sizeof(struct block_header_struct));
 
+    pthread_mutex_lock(&memdom[memdom_id]->mlock);
+ 
     /* Free the memory */
+    printf("[%s] block header addr: %p, freeing 0x%lx bytes in memdom %d\n", __func__, header.addr, header.size, header.memdom_id);
+    memset(memblock, 0, header.size);
+
+    /* Create a new free list node */
+    struct free_list_struct *free_list = (struct free_list_struct *) malloc(sizeof(struct free_list_struct));
+    free_list->addr = memblock;
+    free_list->size = header.size;
+    free_list->next = NULL;
 
     /* Insert the block into free list head */
+    free_list_insert_to_head(header.memdom_id, free_list);   
 
-    /* Remove data - size from record */
+    pthread_mutex_unlock(&memdom[memdom_id]->mlock);
 }
 

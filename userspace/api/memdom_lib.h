@@ -38,6 +38,15 @@ struct free_list_struct {
     struct free_list_struct *next;
 };
 
+/* Every allocated chunk of memory has this block header to record the required
+ * metadata for the allocator to free memory
+ */
+struct block_header_struct {
+    void *addr;
+    int memdom_id;
+    unsigned long size;    
+};
+
 /* Memory domain metadata structure
  * A memory domain is an anonymously mmap-ed memory area.
  * mmap() is called when memdom_alloc is called the first time for a given memdom 
@@ -74,7 +83,7 @@ void *memdom_mmap(int memdom_id,
 void *memdom_alloc(int memdom_id, unsigned long nbytes);
 
 /* Deallocate npages pages in memory domain memdom */
-void memdom_free(int memdom_id, void* data);
+void memdom_free(void* data);
 
 /* Return privilege status of ribbon rib in memory domain memdom */
 unsigned long memdom_priv_get(int memdom_id, int ribbon_id);
