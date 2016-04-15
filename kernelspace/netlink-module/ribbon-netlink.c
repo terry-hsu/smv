@@ -49,7 +49,7 @@ int memdom_internal_function_dispatcher(int memdom_op, long memdom_id1,
                                          long memdom_reqsize, unsigned long malloc_start, char* memdom_data, long ribbon_id,
                                          long memdom_priv_op, long memdom_priv_value){
     int rc = 0;
-    unsigned long memdom_data_addr = 0;
+//  unsigned long memdom_data_addr = 0;
     if(memdom_op == 0){        
         printk( "[%s] memdom_create()\n", __func__);
         rc = memdom_create();        
@@ -177,6 +177,8 @@ int parse_message(char* message){
                 memdom_op = 3;
             else if( (strcmp(token, "priv")) == 0 )
                 memdom_op = 4;
+            else if( (strcmp(token, "queryid")) == 0 )
+                memdom_op = 5;
             else if( (strcmp(token, "mainid")) == 0 )
                 /* Return the global memdom id used by the main thread*/
                 return memdom_main_id();
@@ -219,12 +221,22 @@ int parse_message(char* message){
         
         /* token 3 */
         // memdom: get memdom id
-        if( message_type == 0 && (memdom_op >= 1 || memdom_op <=4) && memdom_id1 == -1 ){
+        if( message_type == 0 && (memdom_op >= 1 && memdom_op <=4) && memdom_id1 == -1 ){
             printk(KERN_CRIT "memdom token 3 (memdom_id): %s\n", token);
             if( kstrtol(token, 10, &memdom_id1) ){
                 return -1;
             }
             continue;
+        }
+        // memdom: get query addr
+        else if( message_type == 0 && memdom_op == 5 ){
+            unsigned long address = 0;
+            printk(KERN_CRIT "memdom token 3 (addr): %s\n", token);
+            if( kstrtoul(token, 10, &address) ){
+                return -1;
+            }
+            printk(KERN_CRIT "addr: 0x%16lx\n", address);
+            return memdom_query_id(address);
         }
         
         // ribbon: get ribbon id

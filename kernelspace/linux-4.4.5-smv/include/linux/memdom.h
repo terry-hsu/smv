@@ -60,6 +60,6 @@ int memdom_priv_get(int memdom_id, int ribbon_id);
 int memdom_mmap_register(int memdom_id);
 unsigned long memdom_munmap(unsigned long addr);
 int memdom_main_id(void);
-
+int memdom_query_id(unsigned long addr);
 #endif
 

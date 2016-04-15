@@ -3,6 +3,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/sched.h>
+#include <linux/mm.h>
 
 /* SLAB cache for ribbon_struct structure  */
 static struct kmem_cache *memdom_cachep;
@@ -384,3 +385,31 @@ int memdom_claim_all_vmas(int memdom_id){
     return 0;
 }
 
+/* Query the memdom id of an address, return -1 if not memdom not found */
+int memdom_query_id(unsigned long addr){
+    int memdom_id = 0;
+    int ribbon_id = 0;
+    struct vm_area_struct *vma = NULL;
+
+    /* Look for vma covering the address */
+    vma = find_vma(current->mm, addr);
+    if( !vma ) {
+        /* Debugging info, should remove printk to avoid information leakage and just go to out label. */
+        printk(KERN_INFO "[%s] addr 0x%16lx is not in any memdom\n", __func__, addr);
+        goto out;    
+    }
+
+    /* Privilege check, only member ribbon can query */
+    ribbon_id = current->ribbon_id;
+    memdom_id = vma->memdom_id;
+    if( ribbon_is_in_memdom(ribbon_id, memdom_id) ) {
+        printk(KERN_INFO "[%s] addr 0x%16lx is in memdom %d\n", __func__, addr, memdom_id);        
+    } else {
+        /* Debugging info, should remove to avoid information leakage, just set memdom_id to 0 (lying to the caller)*/
+        printk(KERN_ERR "[%s] hey you don't have the privilege to query this address\n", __func__);
+        memdom_id = 0;        
+    }
+out:
+    return memdom_id;
+}
+EXPORT_SYMBOL(memdom_query_id);

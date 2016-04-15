@@ -22,7 +22,7 @@ void *fn(void *args){
             ribbon_kill(ribbon_id[i]);
         }
     }
-    printf("Hi!\n");
+    printf("Hi i is in %d!\n", memdom_query_id(&i));
     return NULL;
 }
 

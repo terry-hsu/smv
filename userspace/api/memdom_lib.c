@@ -31,6 +31,12 @@ int memdom_kill(int memdom_id){
     char buf[50];
     struct free_list_struct *free_list;
 
+    /* Bound checking */
+    if( memdom_id > MAX_MEMDOM ) {
+		fprintf(stderr, "memdom_kill(%d) failed\n", memdom_id);
+        return -1;
+    }
+
     /* Free mmap */
     if( !memdom[memdom_id]->start ) {
         rv = munmap(memdom[memdom_id]->start, memdom[memdom_id]->total_size);
@@ -160,7 +166,7 @@ int memdom_priv_mod(int memdom_id, int ribbon_id, unsigned long privs){
 }
 
 
- /* Get the memdom id for global memory used by main thread */
+/* Get the memdom id for global memory used by main thread */
 int memdom_main_id(void){
     int rv = 0;
     char buf[100];
@@ -171,6 +177,22 @@ int memdom_main_id(void){
         return -1;
     }    
     rlog("Global memdom id: %d\n", rv);    
+    return rv;
+}
+
+/* Get the memdom id of a memory address */
+int memdom_query_id(void *obj){
+    int rv = 0;
+    char buf[1024];
+    unsigned long addr;
+    addr = (unsigned long)obj;
+    sprintf(buf, "memdom,queryid,%lu", addr);
+    rv = message_to_kernel(buf);
+    if( rv == -1 ){
+        rlog("kernel responded error");
+        return -1;
+    }    
+    rlog("obj in memdom %d\n", rv);    
     return rv;
 }
 

@@ -100,8 +100,10 @@ int memdom_priv_mod(int memdom_id, int ribbon_id, unsigned long privs);
 /* Get the memdom id for global memory used by main thread */
 int memdom_main_id(void);
 
+/* Get the memdom id for a memory address */
+int memdom_query_id(void *obj);
+
 #ifdef __cplusplus
-}
 #endif
 
 #endif
