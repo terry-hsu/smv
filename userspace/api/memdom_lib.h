@@ -104,6 +104,7 @@ int memdom_main_id(void);
 int memdom_query_id(void *obj);
 
 #ifdef __cplusplus
+}
 #endif
 
 #endif
