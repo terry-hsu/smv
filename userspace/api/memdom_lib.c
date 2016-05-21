@@ -5,6 +5,8 @@
 #include <limits.h>
 #include "memdom_lib.h"
 
+struct memdom_metadata_struct *memdom[MAX_MEMDOM];
+
 /* Create memory domain and return it to user */
 int memdom_create(){    
     int memdom_id;
@@ -38,7 +40,7 @@ int memdom_kill(int memdom_id){
     }
 
     /* Free mmap */
-    if( !memdom[memdom_id]->start ) {
+    if( memdom[memdom_id]->start ) {
         rv = munmap(memdom[memdom_id]->start, memdom[memdom_id]->total_size);
         if( rv != 0 ) {
             fprintf(stderr, "memdom munmap failed, start: %p, sz: 0x%lx bytes\n", memdom[memdom_id]->start, memdom[memdom_id]->total_size);
@@ -196,6 +198,24 @@ int memdom_query_id(void *obj){
     return rv;
 }
 
+/* Get calling thread's defualt memdom id */
+int memdom_private_id(void){
+    int rv = 0;
+    char buf[1024];
+#ifdef THREAD_PRIVATE_STACK
+    sprintf(buf, "memdom,privateid");
+    rv = message_to_kernel(buf);
+    if( rv == -1 ){
+        rlog("kernel responded error");
+        return -1;
+    }    
+#else
+    rv = 0;
+#endif
+    rlog("private memdom id: %d\n", rv);    
+    return rv;
+}
+
 void dumpFreeListHead(int memdom_id){
     struct free_list_struct *walk = memdom[memdom_id]->free_list_head;
     while ( walk ) {
@@ -249,6 +269,12 @@ unsigned long round_up(unsigned long numToRound, int multiple){
 void *memdom_alloc(int memdom_id, unsigned long sz){
     char *memblock = NULL;
     struct free_list_struct *free_list = NULL;
+    
+    /* Memdom 0 is in global memdom, use malloc */
+    if(memdom_id == 0){
+        memblock = (char*) malloc(sz);   
+        return memblock;
+    }
 
     pthread_mutex_lock(&memdom[memdom_id]->mlock);
 

@@ -27,6 +27,11 @@
 /* Minimum size of bytes to allocate in one chunk */
 #define CHUNK_SIZE 64
 
+//#define INTERCEPT_MALLOC
+#ifdef INTERCEPT_MALLOC
+#define malloc(sz) memdom_alloc(memdom_private_id(), sz)
+#endif
+
 /* Free list structure
  * A free list struct records a block of memory available for allocation.
  * memdom_alloc() allocates memory from the tail of the free list (usually the largest available block).
@@ -61,7 +66,7 @@ struct memdom_metadata_struct {
     struct free_list_struct *free_list_tail;
     pthread_mutex_t mlock;  // protects this memdom in sn SMP environment
 };
-struct memdom_metadata_struct *memdom[MAX_MEMDOM];
+extern struct memdom_metadata_struct *memdom[MAX_MEMDOM];
 
 #ifdef __cplusplus
 extern "C" {
@@ -103,8 +108,10 @@ int memdom_main_id(void);
 /* Get the memdom id for a memory address */
 int memdom_query_id(void *obj);
 
+/* Get the calling thread's defualt memdom id */
+int memdom_private_id(void);
+
 #ifdef __cplusplus
-}
 #endif
 
 #endif

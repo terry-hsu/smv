@@ -179,6 +179,8 @@ int parse_message(char* message){
                 memdom_op = 4;
             else if( (strcmp(token, "queryid")) == 0 )
                 memdom_op = 5;
+            else if( (strcmp(token, "privateid")) == 0 )
+                return memdom_private_id();
             else if( (strcmp(token, "mainid")) == 0 )
                 /* Return the global memdom id used by the main thread*/
                 return memdom_main_id();

@@ -31,6 +31,8 @@ int ribbon_main_init(int global){
 	/* Initialize mutex for protecting smv_thread_create */
 	pthread_mutex_init(&create_thread_mutex, NULL);
 
+	/* TODO?: create a memdom for the master thread so that memdom_alloc in domain 0 can work */
+
 	/* Decide whether we allow all threads to access global memdom */
 	ALLOW_GLOBAL = global;
 	return rv;
@@ -119,14 +121,12 @@ int ribbon_exists(int ribbon_id) {
 }
 
 /* Create an smv thread running in a ribbon.
- * TODO: When caller specify ribbon_id = -1, ribbon_thread_create automatically creates a new ribbon 
+ * When caller specify ribbon_id = -1, ribbon_thread_create automatically creates a new ribbon 
  * for the about-to-run thread to running in.  Without non-zero ribbon, the function first check
  * if the ribbon_id exists in the system,  then proceed to create the thread to run in the given
  * ribbon id.
  * Return the ribbon_id the new thread is running in. On error, return -1.
  * If defined as pthread_create, we should return 0 but not the ribbon id.
- * TODO: Call fn from a wrapper function and create a memdom to protect thread-local stack 
- * pthread_attr_getstack()? 
  */
 int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args){
 	int rv = 0;
@@ -151,7 +151,7 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 	}
 
 	/* Join the global memdom if the main thread allows all threads to access the global memory areas */
-	if( ALLOW_GLOBAL){
+	if( ALLOW_GLOBAL ){
 		ribbon_join_domain(0, ribbon_id);
 		memdom_priv_add(0, ribbon_id, MEMDOM_READ | MEMDOM_WRITE | MEMDOM_ALLOCATE | MEMDOM_EXECUTE);
 	}
@@ -159,7 +159,8 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 	/* Atomic operation */
 	pthread_mutex_lock(&create_thread_mutex);
 
-
+	pthread_attr_init(&attr);
+#ifdef THREAD_PRIVATE_STACK // Use private stack for thread 
 	/* Create a thread-local memdom and make ribbon join it */
 	memdom_id = memdom_create();
 	if (memdom_id == -1) {
@@ -186,13 +187,14 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 		pthread_mutex_unlock(&create_thread_mutex);
 		return -1;
 	}
-	pthread_attr_init(&attr);
 	pthread_attr_setstack(&attr, stack_base, stack_size);
-	printf("creating thread with stack base: 0x%p, size: 0x%lx\n", stack_base, stack_size);
+	printf("[%s] creating thread with stack base: %p, end: 0x%lx\n", __func__, stack_base, (unsigned long)stack_base + stack_size);
 
 	/* Record thread-private memdom addr and size */
 	memdom[memdom_id]->start = stack_base;
 	memdom[memdom_id]->total_size = stack_size;
+
+#endif // THREAD_PRIVATE_STACK
 
 	/* Tell the kernel we are going to create a pthread, that is actually an smv thread
 	 * The kernel will set mm->standby_ribbon_id = ribbon_id */
@@ -215,17 +217,19 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 		pthread_mutex_unlock(&create_thread_mutex);
 		return -1;
 	}
+	fprintf(stderr, "ribbon %d is ready to run\n", ribbon_id);
 
 #ifdef INTERCEPT_PTHREAD_CREATE
 	/* Set return value to 0 to avoid pthread_create error */
 	ribbon_id = 0;
-
 	/* ReDefine pthread_create to be ribbon_thread_create again */
 #define pthread_create(tid, attr, fn, args) ribbon_thread_create(NEW_RIBBON, tid, fn, args)
 #endif
 
+#ifdef THREAD_PRIVATE_STACK
 	/* Main thread should leave the thread's memdom after the setup */
 	ribbon_leave_domain(memdom_id, 0);
+#endif
 
 	pthread_mutex_unlock(&create_thread_mutex);
 

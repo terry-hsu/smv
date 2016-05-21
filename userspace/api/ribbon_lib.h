@@ -19,7 +19,7 @@
     }\
 }
 
-
+//#define THREAD_PRIVATE_STACK
 #define NEW_RIBBON -1
 
 #define INTERCEPT_PTHREAD_CREATE
