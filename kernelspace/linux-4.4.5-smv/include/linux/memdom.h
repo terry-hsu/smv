@@ -61,5 +61,6 @@ int memdom_mmap_register(int memdom_id);
 unsigned long memdom_munmap(unsigned long addr);
 int memdom_main_id(void);
 int memdom_query_id(unsigned long addr);
+int memdom_private_id(void);
 #endif
 

@@ -402,14 +402,22 @@ int memdom_query_id(unsigned long addr){
     /* Privilege check, only member ribbon can query */
     ribbon_id = current->ribbon_id;
     memdom_id = vma->memdom_id;
-    if( ribbon_is_in_memdom(ribbon_id, memdom_id) ) {
+    if( ribbon_is_in_memdom(memdom_id, ribbon_id) ) {
         printk(KERN_INFO "[%s] addr 0x%16lx is in memdom %d\n", __func__, addr, memdom_id);        
     } else {
         /* Debugging info, should remove to avoid information leakage, just set memdom_id to 0 (lying to the caller)*/
-        printk(KERN_ERR "[%s] hey you don't have the privilege to query this address\n", __func__);
+        printk(KERN_ERR "[%s] hey you don't have the privilege to query this address (ribbon %d, memdom %d)\n", 
+               __func__, ribbon_id, memdom_id);
         memdom_id = 0;        
     }
 out:
     return memdom_id;
 }
 EXPORT_SYMBOL(memdom_query_id);
+
+/* Get the calling thread's defualt memdom id */
+int memdom_private_id(void){
+    return current->mmap_memdom_id;
+}
+EXPORT_SYMBOL(memdom_private_id);
+
