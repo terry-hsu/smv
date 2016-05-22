@@ -1,0 +1,180 @@
+== Cherokee 1.2 documentation
+
+*********************************
+link:basics.html[Getting started]: Cherokee basics
+*********************************
+
+ . link:basics_why_cherokee.html[Why Cherokee?]: Feature overview.
+ . link:basics_requirements.html[Requirements]: Hardware and software requirements.
+ . link:basics_download.html[Download]: Where and how to download Cherokee.
+ . link:basics_installation.html[Installation]: Installation instructions.
+   - link:basics_installation_easy-install.html[Easy installation]: One-step installation.
+   - link:basics_installation_unix.html[Unix]: Installation on Unix/Linux platforms.
+   - link:basics_installation_osx.html[OSX]: Installation on Mac OSX platform.
+   - link:basics_installation_git.html[From GIT]: Installation of the development release.
+ . link:basics_upgrade.html[Upgrading Cherokee]: Upgrading from a previous release?
+ . link:basics_running_cherokee.html[Running Cherokee]: Basic steps to run Cherokee.
+
+*********************************
+link:config.html[Configuration]: Set up process explained
+*********************************
+
+  . link:config_walkthrough.html[Walkthrough]: Overview and walkthrough.
+  . link:config_index.html[Home]: Main section.
+  . link:config_market.html[Market]: Entry point to the Cherokee Market
+  . link:config_status.html[Status]: Server status information.
+  . link:config_general.html[General]: General settings.
+  . link:config_virtual_servers.html[Virtual servers]: Server definition.
+    - link:config_virtual_servers_rule.html[Rule Behavior]: Specifying the matching rules.
+    - link:config_virtual_servers_rule_types.html[Rule Types]: Choosing the right rule type for the task.
+    - link:config_virtual_servers_evhost.html[Advanced Virtual Hosting]: Multi-domain settings.
+  . link:config_info_sources.html[Information Sources]: Defining information sources.
+  . link:config_advanced.html[Advanced]: Advanced tweaking. Not for the faint of heart.
+  . link:config_wizards.html[Wizards]: Configuration assistants for many known scenarios.
+
+*********************************
+link:cookbook.html[Cookbook]: Recipes for specific tasks
+*********************************
+
+  . link:cookbook_authentication.html[Authentication]: How to set up authenticated resources.
+  . link:cookbook_cross_compilation.html[Cross compilation]: How to cross compile Cherokee.
+  . link:cookbook_dbslayer.html[DBSlayer]: How to set up DBSlayer MySQL balancing.
+  . link:cookbook_embedding_cherokee.html[Embedding Cherokee]: Cherokee on embedded devices.
+  . link:cookbook_maintenance.html[Maintenance]: Seamlessly switching to maintenance mode.
+  . link:cookbook_managing_logs.html[Managing logs]: Seamless log rotation.
+  . link:cookbook_optimizations.html[Optimizing Cherokee]: Recommendations and tweaks.
+  . link:cookbook_redirs.html[Redirections]: Common redirection examples.
+  . link:cookbook_ssl.html[SSL/TLS, certs]: Secure connection tips.
+  . link:cookbook_https_accelerator.html[HTTPS accelerator]: SSL Offloading with Cherokee.
+  . link:cookbook_streaming.html[Streaming]: How to stream Audio and Video with Cherokee.
+  . link:cookbook_php.html[PHP]: How to run PHP apps with Cherokee.
+  . link:cookbook_ror.html[Ruby on Rails]: How to run Ruby on Rails apps with Cherokee.
+  . link:cookbook_django.html[Django]: How to run Django apps with Cherokee.
+  . link:cookbook_coldfusion.html[ColdFusion]: How to run ColdFusion apps with Cherokee.
+  . link:cookbook_drupal.html[Drupal]: How to run Drupal on Cherokee.
+  . link:cookbook_wordpress.html[Wordpress]: How to run Wordpress on Cherokee.
+  . link:cookbook_alfresco.html[Alfresco]: How to run Alfresco on Cherokee.
+  . link:cookbook_mono.html[ASP.NET]: How to run ASP.NET apps with Mono and Cherokee.
+  . link:cookbook_glassfish.html[GlassFish]: How to run Java apps with Cherokee.
+  . link:cookbook_joomla.html[Joomla]: How to run Joomla on Cherokee.
+  . link:cookbook_kumbia.html[Kumbia]: How to run Kumbia apps with Cherokee.
+  . link:cookbook_liferay.html[Liferay]: How to run Liferay on Cherokee.
+  . link:cookbook_mailman.html[Mailman]: How to run Mailman on Cherokee.
+  . link:cookbook_moodle.html[Moodle]: How to run Moodle on Cherokee.
+  . link:cookbook_nagios.html[Nagios]: How to run Nagios with Cheroke.
+  . link:cookbook_phpbb.html[phpBB]: How to run phpBB on Cherokee.
+  . link:cookbook_phpmyadmin.html[phpMyAdmin]: How to run phpMyAdmin on Cherokee.
+  . link:cookbook_sugarcrm.html[SugarCRM]: How to run SugarCRM on Cherokee.
+  . link:cookbook_concrete5.html[Concrete5]: How to run Concrete5 on Cherokee.
+  . link:cookbook_symfony.html[Symfony]: How to run Symfony apps with Cherokee.
+  . link:cookbook_trac.html[Trac]: How to run Trac on Cherokee.
+  . link:cookbook_zend.html[Zend]: How to run Zend apps with Cherokee.
+  . link:cookbook_uwsgi.html[uWSGI]: Setting up Cherokee for uWSGI.
+  . link:cookbook_http_to_https.html[HTTP to HTTPS]: How to redirect all traffic from HTTP to HTTPS.
+  . link:cookbook_traffic_restriction.html[Restricting traffic by IP]: How to restrict traffic based on incoming IP.
+  . link:cookbook_domain_matching.html[Domain matching]: Matching domains and subdomains with Cherokee.
+
+
+*********************************
+link:modules.html[Modules]: Information about the standard modules
+*********************************
+
+  . link:modules_handlers.html[Handlers]: Connection handling modules.
+    - link:modules_handlers_file.html[Static Content]: Send files.
+    - link:modules_handlers_dirlist.html[Only listing]: List directories.
+    - link:modules_handlers_common.html[List & Send]: List directories and send files.
+    - link:modules_handlers_custom_error.html[HTTP error]: Generate custom HTTP errors.
+    - link:modules_handlers_redir.html[Redirection]: URL forwards and rewrites.
+    - link:modules_handlers_cgi.html[CGI]: Common Gateway Interface.
+    - link:modules_handlers_fcgi.html[FastCGI]: Fast Common Gateway Interface.
+    - link:modules_handlers_scgi.html[SCGI]: Simple Common Gateway Interface.
+    - link:modules_handlers_uwsgi.html[uWSGI]: uWSGI protocol.
+    - link:modules_handlers_proxy.html[HTTP reverse proxy]: Surrogate/reverse proxy handler.
+    - link:modules_handlers_ssi.html[Server Side Includes]: SSI Server Support.
+    - link:modules_handlers_postreport.html[Upload Reporting]: Show an upload progress bar.
+    - link:modules_handlers_streaming.html[Audio/Video Streaming]: Media streamer.
+    - link:modules_handlers_secdownload.html[Hidden Downloads]: Secure, Time expiring downloads.
+    - link:modules_handlers_server_info.html[Server Info]: Provide info about Cherokee.
+    - link:modules_handlers_dbslayer.html[MySQL bridge]: MySQL over HTTP bridge.
+    - link:modules_handlers_admin.html[Remote Administration]: Cherokee administration handler.
+    - link:modules_handlers_empty_gif.html[1x1 Transparent GIF]: Returns a 1x1 pixel transparent GIF.
+    - link:modules_handlers_drop.html[Drop Connection]: Immediately drop TCP connection.
+  . link:modules_validators.html[Validators]: Authentication mechanisms.
+    - link:modules_validators_plain.html[Plain]: Plain file mechanism.
+    - link:modules_validators_htpasswd.html[htpasswd]: htpasswd mechanism.
+    - link:modules_validators_htdigest.html[htdigest]: htdigest mechanism.
+    - link:modules_validators_ldap.html[LDAP]: Lightweight Directory Acces Protocol mechanism.
+    - link:modules_validators_mysql.html[MySQL]: Database mechanism.
+    - link:modules_validators_pam.html[PAM]: Pluggable Authentication Module mechanism.
+    - link:modules_validators_authlist.html[Fixed list]: Fixed authentication list.
+  . link:modules_encoders.html[Encoders]: Compression and filtering.
+    - link:modules_encoders_gzip.html[gzip]: compress using gzip algorithm.
+    - link:modules_encoders_deflate.html[deflate]: compress using deflate algorithm.
+  . link:modules_loggers.html[Loggers]: Logging mechanisms.
+    - link:modules_loggers_combined.html[Combined]: Combined log format.
+    - link:modules_loggers_custom.html[Custom]: Customizable log format.
+    - link:modules_loggers_ncsa.html[Common (NCSA)]: Common log format.
+  . link:modules_balancers.html[Balancers]: Load balancing strategies.
+    - link:modules_balancers_round_robin.html[Round robin]: Round Robin strategy.
+    - link:modules_balancers_ip_hash.html[IP Hash]: Client IP hash strategy.
+    - link:modules_balancers_failover.html[Failover]: Failover server strategy.
+
+*********************************
+link:other.html[Other information]: Miscellaneous
+*********************************
+
+  . link:other_faq.html[FAQ]: List of Frequently Asked Questions.
+  . link:other_front_line_cache.html[Front-line Cache]: Specifics of the Caching subsystem.
+  . link:other_os_tuning.html[System Tuning]: Tweaking the OS for maximum performance.
+  . link:other_goodies.html[Cherokee Goodies]: Interesting Cherokee features.
+  . link:other_graphs.html[Usage graphs]: Information on the several graphs available.
+  . link:other_signals.html[Signals]: Signals supported by Cherokee.
+  . link:other_community.html[Community]: More information sources.
+  . link:other_errors.html[Common errors]: Some typical production  errors and their cause.
+  . link:other_bundle.html[Man pages]: Details about each program bundled with Cherokee
+    - link:other_bundle_cherokee.html[cherokee]: Main web server invoker.
+    - link:other_bundle_cherokee-admin-launcher.html[cherokee-admin-launcher]: Launcher for the configuration UI.
+    - link:other_bundle_cherokee-admin.html[cherokee-admin]: The configuration UI.
+    - link:other_bundle_cherokee-config.html[cherokee-config]: Information retriever.
+    - link:other_bundle_cherokee-tweak.html[cherokee-tweak]: Cherokee Swiss army knife
+    - link:other_bundle_cherokee-worker.html[cherokee-worker]: Web server stand alone program.
+    - link:other_bundle_cget.html[cget]: Web retriever.
+
+*********************************
+link:dev.html[Development info]: Things of interest to developers
+*********************************
+
+  . link:dev_quickstart.html[Quickstart]: Where to start?.
+  . link:dev_debug.html[Debugging]: Resources available to debug Cherokee.
+  . link:dev_cherokee.conf.html[cherokee.conf]: Internal configuration specs.
+  . link:dev_qa.html[Quality Assurance]: Some info about QA in Cherokee.
+  . link:dev_ctk.html[CTK]: Dive into the Cherokee Toolkit
+
+*********************************
+link:distro.html[Cherokee's Distribution]: Web Apps distribution on Cherokee
+*********************************
+
+  . link:distro_dev_intro.html[Introduction to Development]: How to build a package.
+
+
+////////////////////////////////////////////////////
+
+Suggested recipes:
+------------------
+Cake PHP: 	http://www.cakephp.org/
+Piwik:		http://piwik.org/
+vBSEO:		http://www.vbseo.com/
+Subversion:	http://subversion.tigris.org/
+Tracks:		http://www.rousette.org.uk/projects/
+SquirrelMail: 	http://www.squirrelmail.org/
+Roller:		http://www.rollerweblogger.org/
+DokuWiki:	http://wiki.splitbrain.org/wiki:dokuwiki
+MediaWiki:	http://www.mediawiki.org/wiki/MediaWiki
+Mantis:		http://www.mantisbt.org/
+Opina:		http://trac.ebabel.info/projects/opina
+KnowledgeTree:	http://www.knowledgetree.com/
+Redmine:	http://www.redmine.org/
+JasperServer:	http://jasperforge.org/sf/projects/jasperserver
+eZPublish:	http://ez.no/
+Jaws Project:	http://www.jaws-project.com/
+////////////////////////////////////////////////////

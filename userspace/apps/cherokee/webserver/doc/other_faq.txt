@@ -1,0 +1,256 @@
+== link:index.html[Index] -> link:other.html[Other information]
+
+Other: Frequently Asked Questions
+---------------------------------
+
+Here is a list of the most frequently asked questions. Please refer to
+the appropriate section of the documentation for more details.
+
+[[faq01]]
+=== How to compile it
+
+----
+./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var
+make
+----
+
+[[faq02]]
+=== How to create dynamic modules
+
+It's the default way.
+
+[[faq03]]
+=== How to configure the module xyz to be linked statically
+
+----
+./configure --prefix=/usr --sysconfdir=/etc \
+  --localstatedir=/var                      \
+  --enable-static-module=xyz
+----
+
+[[faq04]]
+=== How to build everything statically
+
+----
+./configure --prefix=/usr --sysconfdir=/etc \
+  --localstatedir=/var                      \
+  --enable-static-module=all
+----
+
+[[faq05]]
+=== How to create a self signed certificate for TLS
+
+----
+openssl req -days 1000 -new -x509 -nodes    \
+  -out /etc/cherokee/ssl/cherokee.pem       \
+  -keyout /etc/cherokee/ssl/cherokee.pem
+----
+
+[[faq06]]
+=== How to access cherokee-admin from a remote machine
+
+cherokee-admin binds only to local loopback by default. There are some
+workarounds:
+
+* Create an SSH tunnel. This is the recommended way. In order to do so
+  you must issue the following command:
++
+----
+ssh -L 9090:localhost:9090 remote_IP
+----
++
+After that you can access the remote interface through
+  http://localhost:9090 and every request will be forwarded to the
+  remote IP running cherokee-admin.
+
+
+* Launch cherokee-admin with the -b parameter in order to force it to
+  listen to all the network interfaces.
+
+* Finally you could always install cherokee on your local host,
+  configure it there and then copy the generated cherokee.conf file to
+  the device running the cherokee instance you wanted to set up.
+
+[[faq07]]
+=== How to manually write configuration files without cherokee-admin
+
+The configuration file is a plain text file and its syntax is well
+documented. Check the link:dev_cherokee.conf.html[cherokee.conf]
+internal format information. Notice that manually editing the
+configuration is not the recommended method, but the format will
+always be kept updated to facilitate scripting tasks, working with
+embedded devices and other similar situations.
+
+[[faq08]]
+=== Does Cherokee speak WSGI natively like `mod_wsgi` does?
+
+In short: not like `mod_wsgi` at all. There is native support for the
+link:http://projects.unbit.it/uwsgi/[uWSGI server], which is a fast
+(pure C), self-healing, developer-friendly WSGI server aimed for
+professional python webapps deployment and development. Cherokee also
+provides a wizard to adjust its settings to those defined in the uWSGI
+configuration file of your project.
+
+/////////////////////////////////////////////////////////////////////
+We believe that we should not implement anything like `mod_wsgi` for a
+number of reasons.
+
+* First, and purely from an architectural point, embedding an
+interpreter into the web server doesn't feel quite right. Be it a huge
+interpreter linked against dozens of libraries or be it something
+using Python's shared libraries, it doesn't fit with the design
+principles applied throughout Cherokee's code base.
+
+* Second, it sounds hard to believe that `mod_wsgi` is faster than a
+plain and simple SCGI application writing to a Unix socket: WSGI
+applications can also use link:modules_handlers_fcgi.html[FastCGI] and
+link:modules_handlers_scgi.html[SCGI] backends, which are fully
+supported by Cherokee.
+
+We believe Cherokee should be as fast, light, clean and secure as
+possible, and to this end we tend to disregard bulky and monolithic
+solutions. At least until we are given very, VERY, good reasons to
+give it further consideration.
+
+Give Cherokee (SCGI|FastCGI) a try with your WSGI application.  We
+believe that besides fixing both the architectural and security flaws
+you will improve performance.
+/////////////////////////////////////////////////////////////////////
+
+[[faq09]]
+=== I need to make an administration script: What signals are supported by Cherokee?
+
+The list is documented in the link:other_signals.html[Signals] entry.
+
+[[faq10]]
+=== Is there a clean way of switching Cherokee to Maintenance mode?
+
+Check the link:cookbook.html[Cookbook], there is a
+link:cookbook_maintenance.html[recipe on the subject].
+
+[[faq11]]
+=== What licensing is used by the Cherokee web server?
+
+Cherokee is licensed under the GNU General Public License, version 2,
+which can be found in the file *COPYING* distributed with the source
+code. For more details, read the
+link:https://github.com/cherokee/webserver/blob/master/COPYING[full
+license] in the project's Git repository.
+
+If for whatever reason this license does not suit your needs, other
+licensing schemes can be negotiated on a particular basis. Contact
+mailto:alvaro@alobbs.com[Alvaro Lopez Ortega] if this is your case.
+
+[[faq12]]
+=== And what about the documentation?
+
+The documentation is distributed under a
+link:http://creativecommons.org/licenses/by/3.0/[Creative Commons
+Attribution (by)] license, which is the most accommodating in terms of
+what others can do with it. It lets others distribute, remix, tweak,
+and build upon the work, even commercially.
+
+[[faq13]]
+=== How can I contribute contents to the documentation?
+
+The documentation is written and maintained using
+link:http://www.methods.co.nz/asciidoc/[AsciiDoc], a text document
+format for writing short documents, articles, books and UNIX man pages
+that can be easily translated to HTML and DocBook markups. It is
+really easy to get the hang of it, so if you want to contribute,
+please take a look at the
+link:http://powerman.name/doc/asciidoc[AsciiDoc Cheatsheet] and start
+editing the documentation sources right ahead. They are distributed
+with the source code and are located under `./doc` of the source tree.
+If you don't have GIT access, simply mail your contributions to
+link:mailto:feedback@cherokee-project.com[feedback@cherokee-project.com] or create fork on github and request pull.
+
+[[faq14]]
+=== Can encoders be set for specific file types?
+
+Yes. Since content encoding is set on a per-rule basis, simply add a
+rule at the beginning of the virtual server that matches the specific
+file extensions and has the encoding enabled. Set the rule to be
+non-final. That should do the trick.
+
+[[faq15]]
+=== I can't set TLS/SSL in Cherokee-Admin. There's no TLS/SSL (and nothing in the pulldown) for me.
+
+First, make sure openssl in installed. If you are not installing from
+source, most likely you've missed installing libcherokee-mod-libssl
+
+[[faq16]]
+=== Can I use an old configuration file with a new Cherokee release?
+
+The answer is yes. Please refer to the
+link:basics_upgrade.html[Upgrading Cherokee] section of the
+documentation.
+
+[[faq17]]
+=== I'm using *BSD and can't compile Cherokee. What's wrong?
+
+Make sure you are building it with `gmake`.
+
+[[faq18]]
+=== Why do I keep getting HTTP Error 400 while uploading files to a PHP back-end?
+
+PHP is configured by default to limit the size of uploaded
+files. Check the link:cookbook_php.html#upload_limits[PHP upload
+limits] note to tweak the appropriate settings.
+
+[[faq19]]
+=== Why are my nicknames not matched, while *.example.com does work?
+
+The Cherokee Virtual Server nickname is not the first thing that is
+evaluated. In fact all the Host Matches are first evaluated from top
+to bottom, then the nicknames from top to bottom, and on last resort:
+Default.
+
+For example: a virtual server (`A`) with the nickname test.example.com, and
+a second virtual server (`B`) with a hostmatch .*\.example.com. In this
+example, the virtual server `B` will be matched first.
+
+If you are specifically looking for the virtual server `A` to be
+matched first, you will have rely on it being matched by `Host Match`
+instead of by nickname.
+
+.Solution
+* Virtual Server A RegEx: ^test.example.com$
+* Virtual Server B RegEx: .*\.example.com$
+
+Carefully read the way in which
+link:config_virtual_servers.html#domain_names[host matches] are
+performed if you still need further clarification.
+
+[[faq20]]
+=== SSLv2 is ancient, OpenSSL 1.0.0+ doesn't like it, how can I disable it?
+
+Within cherokee-admin, in the Advanced Menu, you can find the option
+to enable/disable SSLv2 all together. It is disabled by default. No
+need to resort to special ciphers such
+(`ALL:!ADH:-LOW:-SSLv2:-EXP:-eNULL:@STRENGTH`), or anythingh else for
+that matter. If you need it, simply enable the check-box to allow
+SSLv2.
+
+[[faq21]]
+=== I'm used to Apache's .htaccess. Will Cherokee ever support it?
+
+Short answer: No. Cherokee is designed to be efficient. Using
+.htaccess is not: it's not a scalable architecture at all, it's
+horrible for performance, you can't use it with Cherokee, and even if
+you could, you shouldn't. If you need .htaccess, you're probably doing
+it wrong. For .htaccess to work, Apache has to check *every* directory
+in the requested path for the existence of a .htaccess file, and if
+present, read and parse *every* one of them. This happens for *every*
+request. Sure, changes in .htaccess are effective instantly, but
+that's because Apache has to read and process the files every time. As
+the requests dig deeper into the directory tree, the associated
+overhead of stats an reads grows. And it is not negligible at all: an
+increase in anything from 5 to 50 is usual for very typical
+configurations.
+
+Yes, the use of .htaccess is very extended. Yes, it has been around
+for a while. No, that doesn't mean it is a good architecture. There
+are better ways of doing things. Converting the behavior of a
+.htaccess file to an efficient set of rules for Cherokee is not
+complicated.

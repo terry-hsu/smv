@@ -1,0 +1,114 @@
+== link:index.html[Index] -> link:other.html[Other information]
+
+The link:http://www.cherokee-project.com/[Cherokee Project] has a
+strong and active
+link:http://www.cherokee-project.com/community.html[Community]. We are
+on social media, mailing lists, blogs, planets, IRC channels,
+celebrate periodic summits, and so on, so it is really simple to
+discuss about the project and look for help.
+
+Social Media
+~~~~~~~~~~~~
+
+Follow link:http://twitter.com/webserver[Cherokee on Twitter].
+
+Join link:http://www.facebook.com/cherokee.project[Cherokee on
+Facebook]
+
+
+[[mailing_lists]]
+Mailing Lists
+~~~~~~~~~~~~~
+
+The documentation for the latest stable release is always available at
+the link:http://www.cherokee-project.com/doc[Cherokee Project] site.
+
+If you cannot find what you are looking for in there, you can always
+go to the official mailing lists. Post your questions there. Usually
+the people hanging around will be happy to help.
+Keep in mind that, as a sign of politeness towards the rest of the
+readers, you should first check if the solution to your
+problem is present in the archives. This will prevent duplicated
+entries and will probably give you an answer a lot faster.
+
+These are the lists currently in existence:
+
+- link:https://groups.google.com/forum/#!forum/cherokee-http[General list]
+- link:https://groups.google.com/forum/#!forum/cherokee-http-dev[Development list]
+- link:https://github.com/cherokee/webserver/commits[GitHub Commits]
+
+
+#cherokee IRC channel
+~~~~~~~~~~~~~~~~~~~~~
+
+Join us at the link:irc://irc.freenode.net/cherokee[#cherokee IRC
+channel]. Many of our members and core-deveolpers are always hanging
+around, so after the mailing lists it is the second best place to look
+for answers and help.
+
+
+[[forums]]
+Forums
+~~~~~~
+Multi-language forums are available at the
+link:http://forum.cherokee-project.com/[Cherokee-Project] site.
+
+
+The Cherokee Planet
+~~~~~~~~~~~~~~~~~~~
+
+Planets are a powerful tool to know what the developers of a project
+are up to. link:http://planet.cherokee-project.com/[Planet Cherokee]
+will let you follow what our deveolpers and contributors are doing
+with their time. It might not always be related to the Cherokee
+Project, but it is guaranteed to be interesting stuff.
+
+
+The Cherokee Blog
+~~~~~~~~~~~~~~~~~
+
+The project has its own
+link:http://blog.cherokee-project.com/[blog]. It is a great place to
+look for information about out latest developments.
+
+
+Bug Tracker
+~~~~~~~~~~~
+
+Your feedback is very important to us. That is why we encourage you to
+log bug reports and Request for Enhancements in our
+link:http://bugs.cherokee-project.com[bug tracker] whenever you find
+something that you think is suitable for improvement.
+
+
+Third party resources
+~~~~~~~~~~~~~~~~~~~~~
+
+Besides the Cherokee Project mailing lists, there are some other third
+party resources that may be of your interest.
+
+[[ohloh]]
+* link:http://www.ohloh.net/p/cherokee[Cherokee at Ohloh]: metrics and
+  analysis on the Cherokee project.
+
+[[IRC]]
+* IRC Channel: link:irc://irc.freenode.net/cherokee[#cherokee] on
+  freenode.net
+
+[[twitter]]
+* link:http://twitter.com/webserver[Cherokee at Twitter]:
+  microblogging about Cherokee.
+
+
+More resources:
+~~~~~~~~~~~~~~~
+
+[[elphel]]
+* How to cross-compile
+  link:http://wiki.elphel.com/index.php?title=Cherokee[Cherokee for
+  Elphel] network cameras.
+
+[[munin]]
+* link:http://www.mobygeek.net/blog/2008/12/07/munin-cherokee-plugin/[Munin
+  Plugin] for plotting the web server.
+

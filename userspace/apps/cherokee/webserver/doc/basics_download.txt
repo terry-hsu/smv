@@ -1,0 +1,39 @@
+== link:index.html[Index] -> link:basics.html[Getting started]
+
+Download
+--------
+
+Cherokee can be downloaded from the Cherokee Web Server download site
+or any of its mirrors. Some users of Cherokee on unix-like systems
+will be better off downloading and compiling a source version. The
+build process is easy, and it allows you to customize your server to
+suit your needs.
+
+Anyway, we provide binary packages for some operating systems and
+GNU/Linux distributions:
+	http://www.cherokee-project.com/downloads.html
+
+
+The latest stable code is at your disposal at:
+
+------------------------------------------------------------------------------
+wget https://github.com/cherokee/webserver/archive/master.tar.gz -O -| tar zxvf -
+------------------------------------------------------------------------------
+
+Alternatively you can access our Git repository. Our current master
+repository will contain only stable changes which are verified with our
+quality assurance suite. We highly appreciate it if you could follow up
+with commits, and report issues using the most recent version.
+
+To take a copy of our source code repository, simply use:
+
+---------------------------------------------------------------------------
+git clone https://github.com/cherokee/webserver.git
+---------------------------------------------------------------------------
+
+To update, simply use:
+
+---------------------------------------------------------------------------
+git pull
+git clean
+---------------------------------------------------------------------------
