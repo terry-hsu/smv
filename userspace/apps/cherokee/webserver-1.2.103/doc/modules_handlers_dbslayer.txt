@@ -1,0 +1,82 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_handlers.html[Handlers]
+
+Handler: MySQL bridge
+---------------------
+
+This handler offers a lightweight database abstraction layer that
+will provide all the benefits of connection pooling. This in turn
+offers scalable advantages for high-load websites.
+
+The original implementation of
+link:http://code.nytimes.com/projects/dbslayer/[DBSlayer] was a MySQL
+to JSON over HTTP bridge. This handler outperforms any other
+implementation by far,  and many more advantages are derived of using
+the MySQL bridge, including:
+
+. Possibility of being proxied: imagine caching your database queries
+with any standard mechanism currently in place.
+
+. Chunked encoding: make your database connections persistent between
+the bridge and the database server. Experience a huge performance
+boost independently of your application's design.
+
+. Possibility of applying any of the encoding modules provided by
+Cherokee: deliver your database results in gzipped format and save
+bandwidth.
+
+. More languages available: besides JSON, the handler can also return
+the information to be used directly by Python, Ruby and PHP.
+
+.Interface example
+image::media/images/admin_handler_dbslayer.png[DBSlayer]
+
+It also makes use of a link:modules_balancers.html[balancing strategy]
+to manage *at least one* link:config_info_sources.html[information
+source]: the MySQL server being bridged.
+
+[[parameters]]
+Parameters
+~~~~~~~~~~
+
+[options="header"]
+|========================================================
+|Parameter    |Description
+|__user__     |The MySQL user to authenticate as.
+|__password__ |The MySQL user password to use.
+|__db__       |Optional. A MySQL database name.
+|__lang__     |Language from which the information will
+               be consumed: json \| python \| ruby \| php
+|========================================================
+
+Note that for this module to be correctly compiled, the MySQL database
+development files are required.
+
+As stated above, the MySQL bridge handler is merely an abstraction
+layer. An excellent one at that, but that is all. No more, no less.
+This means you can perform regular operations on your database, but
+you cannot expect magic to happen. For instance, when you perform an
+INSERT, the Cherokee DB balancer will return a tuple indicating
+whether it succeeded or not, the number of rows affected, a rollback
+flag, etc. It will not, however, replicate the operation among each
+one of you MySQL servers. These arrangements must be made
+independently using MySQL's specific mechanisms.
+
+Since the handler can manage multiple SQL requests in the same
+instruction, a list of responses is delivered containing as many as
+commands were issued.
+
+Warning: When performing multiple operations in a single call to the
+handler, you need to keep one *very important* thing in mind.  Because
+of MySQL's design, when an error is returned no other statements are
+executed. Check MySQL's mysql_next_result() function for more details
+about this limitation. This is not just limited to transactions. This
+means you should make atomic calls to the handler if you want to
+determine precisely what SQL commands where performed. A multiple
+operation can be executed with no further issue, but if one of the
+group fails the rest will not be run. You will receive at least one
+error among the results, which is probably all what you need in case
+you were in the middle of a transaction or that sort of situation.
+
+Further information about this handler can be found in the
+link:cookbook.html[cookbook] section, specifically in the recipe about
+link:cookbook_dbslayer.html[setting up the MySQL balancing].

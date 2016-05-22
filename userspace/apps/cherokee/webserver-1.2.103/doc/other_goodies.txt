@@ -1,0 +1,280 @@
+== link:index.html[Index] -> link:other.html[Other information]
+
+Other: Cherokee goodies
+-----------------------
+
+There are several important features of Cherokee that really do make a
+difference in real-world production environments.
+
+[[cherokee-admin]]
+Cherokee-Admin
+~~~~~~~~~~~~~~
+Cherokee bundles a one of a kind GUI to set up every available feature
+without the need of editing any configuration files by hand. It is a
+modern and easy to manage web application that allows to set up the
+server with speed and ease. The interface is thoroughly documented
+throughout Cherokee's documentation. Several security measures prevent
+non authorized personnel from accessing the application, and one-time
+passwords are generated each time the program is launched. This can be
+used to give temporary access to a remote administrator.
+
+[[cherokee-tweak]]
+Cherokee-Tweak
+~~~~~~~~~~~~~~
+The Swiss-army knife of the Cherokee bundle. This little tool enables
+you, among other things, to rotate the logs with absolutely no
+downtime at all. No connections are lost. No delay happens. It can
+also be used to trace Cherokee's state on the fly, even remotely and
+on production servers.
+
+This tool has its own documentation under the
+link:other_bundle_cherokee-tweak.html[cherokee-tweak] section.
+
+[[x-sendfile]]
+X-Sendfile
+~~~~~~~~~~
+X-Sendfile is a special, non-standard HTTP header that has been
+supported by Cherokee for a while. At first you might think it is no
+big deal, but think again.It can be enabled in any CGI, FastCGI, SCGI,
+or uWSGI backend. Basically its job is to instruct the web server to
+ignore the content of the response and replace it by whatever is
+specified in the header. The main advantage of this is that it will be
+Cherokee the one serving the file, making use of all its
+optimizations. It is useful for processing script-output of e.g. php,
+perl, ruby or any cgi.
+
+This is particularly useful because it hands the load to Cherokee, all
+the response headers from the backend are forwarded, the whole
+application uses a lot less resources and performs several times
+faster not having to worry about a task best suited for a web server.
+
+You retain the ability to check for special privileges or dynamically
+deciding anything contemplated by your backend's logic, you speed up
+things a lot while having more resources freed, and you can even
+specify the delivery of files outside of the web server's document
+root path. Of course, this is to be done solely in controlled
+environments. In short, it offers a huge performance gain at
+absolutely no cost.
+
+Note that the X-Sendfile feature also supports `X-Accel-Redirect`
+header, a similar feature offered by other web servers.
+This is to allow the migration of applications supporting it without
+having to make major code rewrites.
+
+Of course, this feature can be enabled or disabled in a per-rule
+basis, so you can have several rules and handlers on your virtual
+servers with the feature ON or OFF according to your needs.
+
+[[zero-downtime]]
+Zero Downtime Updates, AKA "Graceful restart"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Cherokee has an ability hardly ever seen in any service delivering
+application, be it web content, multimedia streaming or almost any
+other server you can think of.
+
+Whenever a configuration change is applied, it is immediately
+reflected in the web server with no downtime requirements to restart
+the server. Of course the connections that are already being served
+will continue normally with the same parameters that where negotiated
+with the requesting clients, but they will not be shut down just to
+perform a menial task such as restarting the server.
+
+It's a bit like changing the tires on your car while still driving.
+
+In fact, this mechanism is not only limited to configuration
+updates. Cherokee is so smart that it can even apply this to perform
+full program upgrades. This means you can completely replace the
+binaries for new ones, launch the enhanced versions and yet not suffer
+any downtime. Zero connection losses, no lag associated. Guaranteed.
+
+This might seem as just another cool feature, but is in fact
+huge. Just think about it: an extremely high traffic site cannot
+afford to be down. Ever. Not to upgrade the webserver. Not to enhance
+it. Not to reflect a new configuration setting. Thousands of hits per
+second depend on it.
+
+With Cherokee you can cope with this and much more. With Cherokee, it's
+easier done than said.
+
+[[ssl-vhosts]]
+SSL Virtual Hosts
+~~~~~~~~~~~~~~~~~
+
+A problem arises when virtual hosts and SSL must be used
+simultaneously. This is due to the fact that a web server cannot see
+the hostname header when the SSL request is being processed. The first
+thing that the server has to do is to connect with the other end by
+using SSL/TLS. The user entered host part of the URI must match the
+Common Name (CN) provided by the certificate. Since virtual hosts are
+in use, the CN of the first available certificate may or may not match
+the one specified in the early stages of TLS negotiation.
+
+////
+You might have been told elsewhere that named virtual hosts in SSL
+cannot be supported without SNI (Server Name Indication) because a web
+server cannot see the hostname header when the SSL request is being
+processed. Technically this might have been correct in the past. The
+first thing that the server has to do is to connect with the other end
+by using SSL/TLS. The user entered host part of the URI must match the
+Common Name (CN) provided by the certificate. Since virtual hosts are in
+use, the CN of the first available certificate may or may not match
+the one specified in the early stages of TLS negotiation.
+
+However, nothing is forever.. and that applies to SSL/TLS connections
+as well. Cherokee elegantly respins the SSL layer once it knows the
+virtual server, and the magic occurs: SSL supporting several
+certificates on the same IP address and port.
+////
+
+Cherokee supports the clean and standard method of dealing with this
+issue called
+link:http://en.wikipedia.org/wiki/Server_Name_Indication[Server Name
+Indication] (SNI) that sends the name of the virtual host during the
+TLS negotiation.
+
+If link:http://tools.ietf.org/html/rfc4366#section-3.1[SNI] is
+supported by your SSL/TLS library, the SSL layer does not need to be
+restarted. Since the host info can be put in the SSL handshake, things
+will simply work as long as there is a web browser with SNI support at
+the other side. Currently every modern web browser supports this, and
+Cherokee has TLS SNI support for the OpenSSL backends.
+
+Note that for SNI to work, client support is required. Web browsers
+known to support it are Mozilla Firefox 2.0+ and Opera 8.0+ in all its
+variants, Safari 3.2.1+ on OS X and Vista, Internet Explorer 7+
+(Vista, not XP) or later, and Google Chrome (Vista, not XP).
+
+When using SNI is not possible, other workarounds can still be
+used. Check the link:cookbook_ssl.html[SSL recipe] of our
+link:cookbook.html[cookbook] for more details.
+
+[[dbslayer]]
+Database load balancing
+~~~~~~~~~~~~~~~~~~~~~~~
+Ever heard of the *DB Access Layer*, AKA
+link:http://code.nytimes.com/projects/dbslayer/[DBSlayer]?
+
+In case you haven't, DBSlayer is a database abstraction and pooling
+layer designed to be simple to use (it's a DB abstraction layer for
+the web age built on top of HTTP and JSON).
+
+Well, Cherokee ships our very own
+link:modules_handlers_dbslayer.html[DBSlayer] handler that provides
+the fastest implementation in existence. It also provides several
+interesting enhancements.
+
+The usage of this balancing mechanism is a blessing when you wish to
+scale connection growth against the database layer without replicating
+your databases to every web server. It is also useful when you have
+problems like local connections overwhelming a local slave, local
+slave database failures, or replication failures.
+
+This feature delivers connection pooling, database abstraction to
+enable easier migrations and administration, load balancing and
+automatic fail over.
+
+[[reverse_proxy]]
+Reverse Proxy
+~~~~~~~~~~~~~
+Yes, that too! Cherokee also provides a state of the art
+link:modules_handlers_proxy.html[HTTP reverse proxy] module. Check the
+documentation for more details and give it a try.
+
+And if that is not enough, you can always take a look at the rest of
+the link:modules.html[modules] bundled with Cherokee.
+
+[[streaming]]
+Audio and video streaming
+~~~~~~~~~~~~~~~~~~~~~~~~~
+Both audio and video streaming are supported, intelligently handling
+the available bandwidth to maximize service. Are you planning on being
+the next Youtube? Take a look at the
+link:modules_handlers_streaming.html[Streaming handler].
+
+[[secure_downloads]]
+Secure downloads
+~~~~~~~~~~~~~~~~
+A pretty nifty feature that has been having great acceptance is
+Cherokee's capability of generating temporal URLs to serve hidden
+file. The link:modules_handlers_secdownload.html[Hidden Downloads]
+handler is exactly what you need if, for instance, you plan on serving
+lots of files and want to be protected against automatic download
+scripts. Of course that is not the sole use of this. Cherokee only
+implements the security. From there on, the sky is the limit.
+
+[[boolean_rules]]
+AND, OR and NOT rule types
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These rule types have been fully implemented for a long time. The
+things achievable by these rules are at the same time very powerful
+and very complex. You can combine them with as much flexibility as you
+want.
+
+[[wizards]]
+Configuration Wizards
+~~~~~~~~~~~~~~~~~~~~~
+
+Another interesting feature is a project aimed at providing
+configuration wizards as an easy way to deploy a set of standard
+applications. The idea is to select an application from the list and
+let the wizard configure Cherokee to be able to run such application
+-say Wordpress, for instance-.
+
+Even though the obtained configuration could not be perfect, it will
+always be a good starting point to play with for further tuning.
+
+[[slowloris]]
+Slowloris resilient
+~~~~~~~~~~~~~~~~~~~
+
+Slowloris is the name of a perl-based HTTP client that can be used to
+perform DOS attacks on web servers. It uses a minimal amount of TCP
+traffic to do so, and quite frankly the attack has been running amok
+out in the wild with devastating effects for a lot of servers.
+
+Guess what? Cherokee is resilient to Slowloris and is recommended as
+an effective defense on many security guides, such as the
+link:http://www.funtoo.org/en/security/slowloris/[Slowloris DOS
+Mitigation Guide].
+
+[[rrdtool]]
+Statistics and usage graphs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cherokee-Admin uses RRDtool to collect and display statistical
+data. If this feature is enabled, you will access a wide variety of
+information. Check the link:other_graphs.html[usage graphs] section
+for more details.
+
+[[templating]]
+Template subsystem
+~~~~~~~~~~~~~~~~~~~
+
+There is an advanced template subsystem used for both the
+link:config_virtual_servers_evhost.html[Advanced Virtual Hosting]
+module and the link:modules_loggers_custom.html[Custom logger].
+
+These modules can perform macro substitution to provide fine-grained
+control over their capabilities. The template subsystem provides
+slicing support in pretty much the same way the Python syntax does, so
+it can basically allow to use portion of the replacement strings
+instead of the whole thing.
+
+You can read more about the specifics of the syntax and practical
+examples on the config_virtual_servers_evhost.html#slicing[Slicing]
+section of the link:config_virtual_servers_evhost.html[Advanced
+Virtual Hosting] documentation.
+
+[[caching]]
+Front-line Cache
+~~~~~~~~~~~~~~~~
+
+Cherokee has built-in support for efficient caching mechanisms. These
+allow it to cache anything that passes by (whether static or dynamic
+content), without having to depend on an additional caching layer such
+as Squid or Varnish. Typically such layers inherently introduce
+latency due to the round-trips associated to checking whether or not
+the contents have already been cached. Since Cherokee can process all
+of this on its own, this overhead can be totally avoided. Check out
+the link:other_front_line_cache.html[Front-line Cache] documentation.

@@ -1,0 +1,49 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_validators.html[Validators]
+
+Validator: Plain
+~~~~~~~~~~~~~~~~
+
+The plain validator uses a flat-file to authenticate users.
+
+Syntax
+^^^^^^
+
+Each line defines a user.  The username and password are delimited by a ``:``
+colon.
+
+[[parameters]]
+Parameters
+^^^^^^^^^^
+
+[cols="20%,80%",options="header"]
+|=============================================================
+|Parameter      |Description
+|__passwdfile__ |Required. The location of the user/pass file.
+|=============================================================
+
+The parameter that specifies the file containing the pairs
+'user:password' is mandatory. `Plain` authentication can use both
+`Basic` and `Digest` schemes.
+
+You can and should place the password file outside the web tree to
+prevent remote users from accessing the list.
+
+.Security tab
+image::media/images/admin_validators_plain.png[Validator Plain]
+
+This could be the contents of the the file `/var/www/passwd` specified
+in this example:
+
+****
+testuser:testpassword
+
+cherokee:webserver
+****
+
+This would only allow access to the users `cherokee` and `testuser`.
+
+[[compatibility]]
+Compatibility
+^^^^^^^^^^^^^
+
+This validator is compatible with both **basic** and **digest** schemes.

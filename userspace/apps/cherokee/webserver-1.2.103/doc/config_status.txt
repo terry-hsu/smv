@@ -1,0 +1,19 @@
+== link:index.html[Index] -> link:config.html[Configuration]
+////
+Last checked: 2010/04/26 Cherokee 0.99.46b
+////
+
+Status
+------
+
+This section allows you to monitor the web server. You need to enable
+the `Information Collector` setting in the
+link:config_general.html[General section] in order to render usage
+graphics.
+
+In case statistics are collected, link:other_graphs.html[usage graphs]
+are displayed in this section.
+
+You can check information relevant to the web server as a whole, or on
+a per-virtual-server basis which can be enabled or disabled
+individually.

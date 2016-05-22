@@ -1,0 +1,130 @@
+== link:index.html[Index] -> link:cookbook.html[Cookbook]
+
+Cookbook: Optimizing Cherokee
+-----------------------------
+
+Cherokee's default parameters are suitable for most cases. However,
+there are a number of things that can be tweaked in order to improve
+the behavior of Cherokee under special circumstances.
+
+[[compiled]]
+Compiled capabilities
+~~~~~~~~~~~~~~~~~~~~~
+
+First of all you should check the capabilities that have been built
+into your specific Cherokee build. This can be done by:
+
+----
+$ cherokee -i
+Compilation
+ Version: 1.0.0
+
+[...]
+
+Support
+ IPv6: yes
+ Pthreads: yes
+ Tracing: yes
+ sendfile(): yes
+ syslog(): yes
+ Polling methods: select poll epoll
+----
+
+The last section is interesting. If you see that any significant
+capability supported by your platform is missing, you should really
+build another binary or check if something is wrong with your
+system. Note that not every single capability is present in every
+platform. For instance, `epoll` is a polling method specific to Linux
+platforms, and its absence from any non-Linux system is perfectly
+normal. It is inherently more efficient than the other methods
+available on Linux. For BSD based platforms `kqueue` is also a great
+improvement over the most standard `poll`. This is the standard POSIX
+conformant system call, and will only be available on systems that
+follow the POSIX standard. From the list above, the capabilities that
+have a dramatic impact in the speed of Cherokee are the polling
+methods, the existence of sendfile() and the Pthreads support.
+
+
+[[tweaks]]
+Tweaks
+~~~~~~
+
+There is no general recommendation that is the best for everybody. In
+general Cherokee's default values try to offer a good compromise
+between resources and performance, but for specific cases you will be
+able to tweak somethings that may (or may not) improve the overall
+performance. Some of the things to keep in mind are mentioned here.
+
+Encoding::
+As it is explained in the link:modules_encoders.html[Encoders']
+documentation, compressing the information to be sent makes a lot of
+sense for specific file types. It's Not that much processing power is
+used to compress a text file, for instance, and hardware is cheaper
+than bandwidth, so you should encode files whenever it makes sense.
+
+Handler specific::
+* *CGI, SCGI, FastCGI*: link:other_goodies.html#x-sendfile[X-Sendfile]
+  support can be enabled or disabled. If you know what this is, you
+  will know how X-Sendfile improves performance by assigning the task
+  of serving files to the web server while leaving the backend
+  application to run free without waiting for the task to end. This
+  gives you extra performance at no cost, but of course your
+  application must specifically make use of this feature.
++
+* *Static Content*: IO cache is a caching mechanism that dramatically
+ improves performance serving files. The caching algorithm is very
+ efficient and assures that a file will be immediately served while it
+ remains cached. The usage of IO cache is absolutely recommended in
+ all cases except when the contents of the files are changed
+ frequently. Note that the global _IO Cache_ setting from the
+ _Advanced_ section (see bellow) must be enabled for each individual
+ handler's setting to be taken into account.
+
+General::
++
+* *Timeout*: The lower your timeout interval is, the faster you will
+  free up resources at the cost of cancelling viable but slow
+  connections.
++
+* *Keep alive*: This setting dramatically affects the speed at which
+  repeated connections are served to the same client. This is
+  especially noticeable when an asynchronous application is used. The
+  trade off is that, since connections are kept open more time, less
+  connections remain available for other clients in any given
+  moment. Cherokee does a pretty good job at reclaiming unused open
+  connections, especially when the number of connections approaches
+  the limit imposed to the system, but any way you should keep in mind
+  this.
+
+Advanced::
++
+* *Threads*: The default value is chosen so that it is more than enough
+  to saturate the processors. You will probably not get much out of
+  this setting, since a higher value will not produce better results
+  and a lower one will simply increase the amount of unused processor
+  power.
++
+* *File descriptors*: By definition, the higher this limit is, the
+  less efficient will your system be in relative terms. However, it
+  is understood that if you are tweaking this value is because you
+  need to, that is, you have a very high load site. In these cases
+  increasing the file descriptors' limit makes sense because the
+  higher this limit is, the more connections Cherokee will be able to
+  handle. By default Cherokee does not touch this value and it uses
+  the one specified by your system.
++
+* *IO Cache*: This setting allows to enable or disable server-wide
+  the content caching. If disabled, the _IO Cache_ settings of the
+  static content handlers will also be disabled, no matter what
+  behavior is desired in their specific configuration. This global
+  setting is essential if you are trying to debug a cache-related
+  bug in your server's configuration.
+
+[[trace]]
+Debug: Disable TRACE
+~~~~~~~~~~~~~~~~~~~~
+When compiled with debugging support, Cherokee's performance is
+heavily penalized. Being able to trace the state of the web server at
+a very low level is quite useful when you have to fine tune your
+infrastructure, but once it is done you should disable this feature.
+A production environment deserves only the finest tuned binaries.

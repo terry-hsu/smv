@@ -1,0 +1,30 @@
+== link:index.html[Index] -> link:basics.html[Getting started]
+
+Running Cherokee
+----------------
+
+There are several ways you can run Cherokee:
+
+. Automatic start: this makes use of the mechanism offered by your OS
+  that should have been configured when Cherokee was installed. It
+  will run making use of the link:dev_cherokee.conf.html[`cherokee.conf`]
+  present in your system.
+
+. Guardian wrapper: The link:other_bundle_cherokee.html[cherokee] program
+  comes as a standard part of the Cherokee bundle. It is a security
+  mechanism that ensures Cherokee's recovery in case of any system
+  failure and wraps the calls to `cherokee-worker`. This is what is
+  actually launched when Cherokee is automatically started.
+
+. Stand alone instance: Cherokee supports a series of parameters to
+  launch it from the command line. Refer to the the appropriate
+  documentation section about
+  link:other_bundle_cherokee-worker.html[`cherokee-worker`] to see the
+  complete list of optional arguments.
+
+. Cherokee-Admin: The administration web interface allows you to
+  configure and launch Cherokee. This is probably where you want to
+  start if you have just installed the web server. Launch the
+  link:other_bundle_cherokee-admin.html[`cherokee-admin`] process and follow
+  the link:config_walkthrough.html[Quickstart] section of the
+  documentation.

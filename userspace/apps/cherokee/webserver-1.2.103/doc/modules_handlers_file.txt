@@ -1,0 +1,44 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_handlers.html[Handlers]
+
+Handler: Static Content
+-----------------------
+
+The **file** handler serves files from its document root.  No more, no
+less.
+
+[[parameters]]
+Parameters
+~~~~~~~~~~
+[cols="25%,25%,50%",options="header"]
+|===================================================
+|Parameters  |Type    |Description
+|`iocache`   |Boolean |Optional. Default: `Enabled`.
+|===================================================
+
+By default it will use an internal I/O cache to improve the server
+performance.
+If you don't want to use it with a directory just unset it using this
+parameter.
+
+It is a good idea to disable to I/O cache if the content of the
+directory changes often.
+
+[[examples]]
+Examples
+~~~~~~~~
+Lets imagine your virtual server DocumentRoot points to /var/www.
+
+[cols="25%,75%"]
+|===================================================
+|Handler       | `Static Content`
+|Document Root | No custom Document Root will fall back to the default one defined for the virtual server.
+|Use I/O cache | `Enabled`
+|===================================================
+
+.Handler Static Content
+image::media/images/admin_handler_file.png[Handler file]
+
+This is a simple example that will make Cherokee able of serving each
+CSS file under /var/www or any subdirectory with the IO/cache setting
+enabled. This would only not apply if a `final` rule with higher
+priority specified otherwise.

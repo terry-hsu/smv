@@ -1,0 +1,166 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_handlers.html[Handlers]
+////
+Last checked: 2010/08/17 Cherokee 1.0.9b
+////
+
+Handler: Redirection
+--------------------
+
+The main idea of a redirection is telling the web client to go to
+another URL when the requested URL matches a rule. It could happen
+that this is not precisely what you are looking for. Check the
+link:modules_handlers_proxy.html[reverse proxy] handler if you are
+looking for more complex layer 7 operations.  However, for URL
+redirections this handler is the place to go. A very common scenario
+would be rewriting URLS.
+
+Lets suppose you have URLs like::
++
+----
+    http://example.com/inst/photogallery/viewphoto?photoid=1235
+    http://example.com/inst/photogallery/viewcomments?photoid=1235
+    http://example.com/inst/photogallery/admin?photoid=1235&method=delete
+----
+
+You probably would prefer URLs like::
++
+----
+    http://example.com/photo/1235
+    http://example.com/photo/1235/cmts
+    http://example.com/photo/1235/delete
+----
+
+[[parameters]]
+Parameters
+~~~~~~~~~~
+
+This directive uses PCRE (Perl Compatible Regular Expressions) to make
+the substitution.
+
+* Type: [External | Internal]
+
+  - *Internal*:
+    The redirection will happen internally, hence the internal URL in
+    which the address is translated will be invisible for the client.
+
+  - *External*:
+    It works in the same way as the previous one, but in this case, it
+    will redirect the connection to the new resource.
+
+* *Regular Expression* and *Substitution* are the matching request and
+   the intended target of such petition. Getting into details of
+   regular expressions is out of the scope of this document. Besides,
+   there are many link:http://perldoc.perl.org/perlre.html[Perl
+   regular expressions] references. Macros can be used for these
+   substitutions, which is specially handy for some cases that cannot
+   be covered any other way, such as uniformly managing virtual
+   servers with multiple matches. Take a look at the examples at the
+   end of this section for further clarification.
++
+[options="header"]
+|=========================================================================
+|Variable           |Example          |Description
+|`${host}`          |example.com      |Host of the matching virtual server
+|=========================================================================
++
+
+This macro uses the standard template subsystem , which provides
+link:config_virtual_servers_evhost.html#slicing[slicing support]. You
+should read more about this powerful feature if you are not already
+familiar with it.
+
+The maximum allowed number of substitutions on an expression is
+limited to 20, and even though it could be raised even more, this
+wouldn't actually make any difference for any real-life case.
+
+
+[[vhosts]]
+Virtual hosts and redirections
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The internal redirections, using the `internal` keyword, are limited to
+work in the same virtual host. All the internal redirections will be
+processed in the original virtual host, which makes a lot of sense in
+terms of security.
+
+In case you do need to redirect a resource to another virtual host
+and/or domain, you will have to use an explicit redirection using the
+`external` keyword.
+
+[[rule_type]]
+The influence of the rule type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Any rule type can be used with the redirection handler: Directory,
+Extensions, Regular Expression, etc. Only the case where the type is
+*Regular Expression* will require some more extra information.
+Because of Cherokee's design, modularity and inheritance is heavily
+used throughout the code base. This one is a special case because the
+regex entry of the redirection handler can be empty whenever the
+matching rule used is a regular expression (because it is inherited by
+it).
+
+The logic behind this is that you can set up a regular expression to
+match the rule, but once you're in the redirection handler you could
+or could not be needing another matching to be performed. If not, the
+original one (the one from the rule) will be enough. If you do, you
+can specify a completely different expression to be matched. For
+instance, you could match the rule taking just the beginning part of
+the request as meaningful, and once you are into the handler you might
+want to consider just the end of it before making the substitution.
+
+[[examples]]
+Examples
+~~~~~~~~
+
+This example will perform internal redirections:
+
+[cols="30%,70%",options="header"]
+|=======================================================================================
+|Regular Expression    |Substitution
+|__/(\d+)$__           |http://example.com/inst/photogallery/viewphoto?photoid=$1
+|__/(\d+)/cmts__       |http://example.com/viewcomments?photoid=$1
+|__/(\d+)/delete__     |http://example.com/inst/photogallery/admin?photoid=$1&method=delete
+|__/https_redir/(\d+)__|https://${host}/secure?photoid=$1
+|=======================================================================================
+
+Which would translate into the following redirections for the listed
+matching requests:
+
+[cols="30%,70%",options="header"]
+|===========================================================================================
+|Request               |Internal translation
+|__/photo/123__        |http://example.com/inst/photogallery/viewphoto?photoid=123
+|__/photo/213/cmts__   |http://example.com/viewcomments?photoid=213
+|__/photo/501/delete__ |http://example.com/inst/photogallery/admin?photoid=501&method=delete
+|__/https_redir/555__  |https://example.com/secure?photoid=555
+|===========================================================================================
+
+You might also want to check out the cookbook entry titled
+link:cookbook_http_to_https.html[HTTP to HTTPS] on how to redirect all
+traffic from HTTP to HTTPS.
+
+
+[[global]]
+Global redirections
+~~~~~~~~~~~~~~~~~~~
+
+If you want to implement global redirections that can be defined once
+and apply to every virtual server on your configuration, you will also
+have to perform matches against the host part of the request. This can
+be done by creating an additional virtual server using "Regular
+Expression" as method to match the host, which can be specified
+through the the `Host Match` tab. You will then have to define a
+substitution that uses both type of regex matches:
+
+.Match groups
+[cols="20%,80%"]
+|======================================
+| `^1,^2,^3,..` | These are substituted by the host name match.
+| `$1,$2,$3,..` | These are substituted by either the handler match (if any) or its own match groups.
+|======================================
+
+For more information, check out the practical example in the cookbook
+describing how to implement
+link:cookbook_redirs.html#global-redirs[global redirections].
+

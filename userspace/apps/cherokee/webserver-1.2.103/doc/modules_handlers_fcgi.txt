@@ -1,0 +1,53 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_handlers.html[Handlers]
+
+Handler: FastCGI
+----------------
+
+The fcgi handler makes queries to *FastCGI* servers, such as PHP, Ruby
+on Rails or Django in order to get the request response. FastCGI is
+scalable and language independent enhancement to CGI that provides
+high performance without limitations of server specific APIs and
+reduced overhead. It is basically the same thing as CGI but *much
+faster*.
+
+This module accepts all the general
+link:modules_handlers_cgi.html[CGI] parameters. It needs a balancer to
+be configured besides that. It is the piece of configuration that
+points to the handler where to find the FastCGI servers.
+
+For most of the cases there will be only one FastCGI server though. In
+that scenario the way to go would be to configure the handler to use a
+link:modules_balancers_round_robin.html[Round Robin] balancer and configure
+a single host or interpreter (it has no performance penalty).
+
+
+[[parameters]]
+Parameters
+~~~~~~~~~~
+
+To set up the general gateway options, read about the common
+parameters shared with the link:modules_handlers_cgi.html[Common CGI
+options] handler. All of them apply with the exception of `Check
+file`, which will only be present if the manager is handling an
+extension. Be sure to understand what that parameter does. It is
+link:modules_handlers_cgi.html#check_file_warning[explained in detail]
+among the rest of CGI options, and depending of how you are using
+FastCGI it can make all the difference between succeeding and failing
+to run your application.
+
+To set up the FastCGI specifics, read the
+link:modules_balancers.html[Balancers] section for general information
+and the link:config_info_sources.html[information sources] section for
+more details.
+
+
+[[examples]]
+Examples
+~~~~~~~~
+Refer to the link:cookbook.html[Cookbook] if you want specific
+examples on how to configure this
+handler. The recipe about link:cookbook_php.html[setting up PHP] is a
+good starting point.
+
+.FastCGI Interface
+image::media/images/admin_handler_fastcgi1.png[FastCGI]

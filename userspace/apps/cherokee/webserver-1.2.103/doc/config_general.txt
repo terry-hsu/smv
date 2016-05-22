@@ -1,0 +1,150 @@
+== link:index.html[Index] -> link:config.html[Configuration]
+////
+Last checked: 2010/04/26 Cherokee 0.99.46b
+////
+
+General Configuration
+---------------------
+
+[[networking]]
+Network
+~~~~~~~
+
+.Network settings
+image::media/images/admin_general_networking.png[Network]
+
+
+IPv6 support
+^^^^^^^^^^^^
+The IPv6 configuration key brings the possibility of activating or
+deactivating the IPv6 support at the server. If Cherokee has been
+compiled with IPv6 support (--with-ipv6), this configuration entry
+will be fully functional, otherwise it will be ignored.
+
+
+SSL/TLS Back-end
+^^^^^^^^^^^^^^^^
+Specifies the TLS/SSL backend to be used, if any. The current option
+is OpenSSL.
+
+
+Timeout
+^^^^^^^
+Sets the number of seconds that Cherokee will wait before closing the
+connection.
+
+
+Server Tokens
+^^^^^^^^^^^^^
+
+This specifies the string that Cherokee should use to identify
+itself.
+
+[options="header"]
+|=======================================================
+|Parameters |Description
+|Product    |Cherokee
+|Minor      |Cherokee/0.98
+|Minimal    |Cherokee/0.98.3
+|OS         |Cherokee/0.98.3 (UNIX)
+|Full       |Cherokee/0.98.3 b2955 (UNIX)
+|=======================================================
+
+By default, Cherokee will use *Full*.
+
+Graphs type
+^^^^^^^^^^^
+Through this you can enable or disable the usage of RRD graphs. Check
+the link:other_graphs.html[usage graphs] section for more details.
+
+[[ports_to_listen]]
+Ports to listen
+~~~~~~~~~~~~~~~
+
+.Ports
+image::media/images/admin_general_ports.png[Ports to listen]
+
+This section allows to configure the ports that the server will be
+listening to. You can add several different ports, and configure
+whether they will be used for HTTP or HTTPS.
+
+Each binding entry can be configured to listen to a network
+interface. In case the text entry is empty, the server will accept
+connections from that port on any interface.
+
+[[server_permissions]]
+Server Permissions
+~~~~~~~~~~~~~~~~~~
+
+.Permissions
+image::media/images/admin_general_permissions.png[Server Permissions]
+
+User & Group
+^^^^^^^^^^^^
+
+The User directive configures which user the Cherokee daemon will
+normally run as. By default, Cherokee runs as root which is considered
+undesirable in all but the most trustful network configurations.
+
+The User directive used in conjunction with the Group directive
+instructs the daemon to switch to the specified user and group as
+quickly as possible after startup.
+
+There are two possible formats: using the user or group name, or using
+the system ID.
+
+Chroot
+^^^^^^
+
+Cherokee can be jailed inside a directory. Note that this should not
+be used as the sole security measure.
+
+
+[[icons]]
+Icon management
+~~~~~~~~~~~~~~~
+The icons configuration file associates an icon image with one or more
+file extensions. This information will be used mainly by the
+link:modules_handlers_dirlist.html[dirlist] handler.
+
+
+* **Extensions**
+
+    - This allows to associate icons with extensions.
+
+* **Files**
+
+   - This section lets you specify an icon for certain filenames such
+     as "core" or "README". It accepts wild-card strings (using * and
+     ?)
+
+* **Special icons**
+
+    - **Directory**: In this case, it specifies the icon to be used
+        with Directories.
+
+    - **ParentDirectory**: This entry is used to assign an Icon to the
+        "go to the parent directory" action.
+
+    - **Default**: This is the icon that will be shown if any of the
+        previous ones matched.
+
+.Icons
+image::media/images/admin_general_icons.png[Icons]
+
+
+[[mime]]
+MIME Types
+~~~~~~~~~~
+This section allows to add support for new MIME types or edit the
+existing ones.
+
+* *Mime Type*: this is the proper mime string.
+
+* *Extensions*: the file extensions for this type of contents.
+
+* *Max Age*: defines for how long a file of this type must be cached at
+  the client's side.
+
+.MIME Types
+image::media/images/admin_general_mime.png[MIME Types]

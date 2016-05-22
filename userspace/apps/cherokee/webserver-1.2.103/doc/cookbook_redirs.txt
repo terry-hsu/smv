@@ -1,0 +1,134 @@
+== link:index.html[Index] -> link:cookbook.html[Cookbook]
+////
+Last checked: 2011/03/17 Cherokee 1.2.2b
+////
+
+Cookbook: Redirections
+----------------------
+
+Every now and then a redirection example is requested in the
+link:other_community.html[mailing list]. This recipe is meant to be a
+central archive of such examples. Remember there are some more generic
+examples both in the link:config_walkthrough.html[quickstart] and in
+the link:modules_handlers_redir.html[redirection] handler sections.
+
+There is also a wizard to automatically assist you with
+redirections. It can be found in the link:config_wizards.html[Wizards]
+section of the `Virtual Servers` panel.
+
+If you are not familiar with how a domain name can be matched, please
+read about link:cookbook_domain_matching.html[domain matching] in
+Cherokee before proceeding.
+
+Redirections are essential on any modern web server, not only to
+display pretty URLs, but also to address usability and SEO issues.
+
+A common scenario is that of a virtual server being accessible both
+with and without the `www` prefix. It is customary to have both, but
+it is also a good idea to have only one of them as main entry point to
+a website, so that the number of web hits isn't incorrectly halved
+when anlaysing web traffic.
+
+This can be done on a per-virtual-server basis, but it can be a
+cumbersome task if we're dealing with a huge amount of virtual
+servers.
+
+Of course, Cherokee alows a much more practical approach, and setting
+up only one rule to handle all redirects is painless and
+straightforward. Matches can be performed against the host name, the
+actual request, or both, so the mechanism is quite flexible. If this
+is what you want, you can jump to the link:#global_redirs[global
+redirection] steps later on this document.
+
+
+[[simple-domain-redir]]
+Redirecting www.example.net to example.net
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sometimes a site will have several domains or subdomains pointing to
+the same official name. For whatever reasons (site statistics, for
+instance), having many subdomains redirected to a unique subdomain
+might be desirable. This can be accomplished fairly easily. The
+general recipe consists in defining a virtual host with the sole
+purpose of redirecting petitions to the official subdomain. In our
+example, this could manage __*.example.net__ and the __.com__ and
+__.org__ variations.
+
+.Host Match
+|======================================
+| Host Match | `Wildcards`
+| Domain pattern #1 | *.example.net
+| Domain pattern #2 | *.example.org
+| Domain pattern #3 | *.example.com
+|======================================
+
+.Host Match interface
+image::media/images/cookbook_redir_domains.png[Managed domains]
+
+The official name would then be managed by another virtual host
+(just for __example.net__). The `redir` virtual host will have a
+`Default` managed by the `Redirection` handler.
+
+.Rule list
+image::media/images/cookbook_redir_behavior.png[Unique rule]
+
+This in turn would define an _external redirection_ with a _Regular
+Expression_ like __^/(.*)$__ and the appropriate _Substitution_:
+http://example.net/$1
+
+.New Regular Expression
+image::media/images/cookbook_redir_handler.png[Handler configuration]
+
+Keep in mind the redirection has to be external in order for Cherokee
+to rewrite the the URL. If it wasn't, the redirection would be applied
+but no change would be displayed to the users while browsing the site.
+
+[[https-redir]]
+Redirecting to HTTPS
+~~~~~~~~~~~~~~~~~~~~
+
+Now lets imagine a scenario where the name of the virtual server
+matched is of importance for the substitution.  For instance, supose
+you want all the traffic to the `/secure_dir` directory of a regular
+HTTP channel to be redirected to an HTTPS channel through a server
+whose name depends on that of the matching host.
+
+In this case you need to resort to the macros supported by the
+handler. First you'll have to create a `Directory` type rule managed
+by the `Redirection` handler.  And second, define an _external
+redirection_ with a _Regular Expression_ like __^/(.*)$__ and the
+appropriate _Substitution_: https://${host}/secure_dir/$1
+
+.Handler interface
+image::media/images/cookbook_redir_https.png[HTTPS redirections]
+
+[[global-redirs]]
+Global redirections
+~~~~~~~~~~~~~~~~~~~
+
+It is fairly simple to configure a www redirect for every (sub)domain
+name, where requests of the form http://www.domain.name must be
+redirected to http://domain.name.
+
+For this you'll need to:
+
+. Create a new virtual server that uses "Regular Expressions" in the "Host Match"
+. Add a regular expression to match the host names: www\.(.+)$
+. In the same virtual server, set a "Redirection" handler as the Default rule.
+. In the handler, add a new RegEx entry defined as follows:
+
+.Options
+[options="header"]
+|======================================
+|Field        |Value
+|Show |External
+|Regular Expression |/(.*)$
+|Substitution |http://^1/$1
+|======================================
+
+.Match parameters
+[cols="20%,80%"]
+|======================================
+| `^1,^2,^3,..` | These are substituted by the host name match.
+| `$1,$2,$3,..` | These are substituted by either the handler match (if any) or its own match groups.
+|======================================

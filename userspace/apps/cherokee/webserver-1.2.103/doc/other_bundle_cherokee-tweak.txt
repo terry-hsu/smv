@@ -1,0 +1,123 @@
+== link:index.html[Index] -> link:other.html[Other information] -> link:other_bundle.html[Man pages]
+////
+Last checked: 2010/08/17 Cherokee 1.0.9b
+////
+
+Man pages: cherokee-tweak
+-------------------------
+
+This command-line tool is also not as well known as it should. Again
+this is not by lack of merits, which in fact are considerable. Its
+intended audience are also system administrators and developers.
+
+`cherokee-tweak` is a swiss army knife that allows to perform several
+administrative tasks from the command line. It can connect to a
+running Cherokee instance, be it in the local computer or at a remote
+location, and request it to perform several actions.
+
+These actions are:
+
+  * Log rotation: `logrotate`.
+
+  * Live tracing: `trace`.
+
+  * Provide information: `info`.
+
+  * Report the list of Information Sources of a running server and
+    their individual statuses.
+
+  * Kill remotely any information source.
+
+This is the full information provided by the manpage.
+**********************************************************************
+*NAME*::
+       cherokee-tweak  - Command-line interface to the administration interface of Cherokee
+
+*SYNOPSIS*::
+       cherokee-tweak [options] URL info
+       cherokee-tweak [options] URL sources
+       cherokee-tweak [options] URL kill-source ID
+       cherokee-tweak [options] URL logrotate   PATH
+       cherokee-tweak [options] URL trace       TRACE
+
+*DESCRIPTION*::
+       cherokee-tweak connects to a running cherokee instance, either  local  or
+       remote, and requests it to perform one of several actions.
+
+*COMMANDS*::
+       info;;
+               Prints info about the server status
+
+       sources;;
+               Prints a list of the information sources
+
+       kill-source;;
+               Kill a remote information source, specified by its reported ID
+
+       logrotate;;
+               Rotates a local (*and only local*) log file specified by PATH.
+
+       trace;;
+               Manipulates the tracing mechanism. TRACE should be the
+               string that specifies the modules to be traced, and
+               Cherokee must have been compiled with the
+               --enable-trace option for this to work. Everything
+               traceable with CHEROKEE_TRACE can also be traced this
+               way.
+
+*PARAMETERS*::
+       URL;;
+               Required before any command. This is the URL where the
+               administrative interface can be found.  This target
+               must be defined previously in cherokee-admin, enabling
+               a "Remote Administration" type handler (Virtual
+               Servers->Behavior->Rule Management->Add new rule, and
+               then Handler->"Remote Administration").  The definition
+               of a security mechanism is highly encouraged.
+
+       -h,  --help;;
+               Shows brief usage information
+
+       -V,  --version;;
+               Print version and exit
+
+*OPTIONS*::
+       cherokee-tweak accepts the following options:
+
+       -u,  --user=STRING;;
+               Specifies the user name with which to identify to the server
+
+       -p,  --password=STRING;;
+               Specifies the password with which to identify to the server
+
+**********************************************************************
+
+To use `cherokee-tweak`, an administrative interface must be defined
+within link:other_bundle_cherokee-admin.html[cherokee-admin]. That is, you
+must define a path managed by the handler `Remote
+Administration`. This can be done through the 'Virtual Servers' option,
+in 'Behavior' and using the 'Add new rule' option.
+
+image::media/images/admin_handler_admin.png[Setting up an admin interface]
+
+Please note that while you are at it, the definition of a security
+(through the 'Security' tab) is highly encouraged. Although you have
+the choice to, you should never use 'None' as security mechanism
+since this would leave your system exposed to third parties using
+`cherokee-tweak`.
+
+Also note that the usage of the `trace` command has no effect unless
+Cherokee is compiled with the `--enable-trace`. This is a debugging
+option and it is unlikely to be present in binary version of Cherokee
+not specifically compiled with this in mind.
+
+Every module traceable with CHEROKEE_TRACE can also be traced this
+way. Refer to the link:dev_debug.html["Debugging"] section of the
+documentation for more information on this matter.
+
+Keep in mind one important thing: when the `trace` command is
+specified, `cherokee-tweak` activates the tracing functionality within
+the `cherokee` instance. It does not provide tracing of its own. This
+means the debugging information will appear in the machine that is
+actually running the `cherokee` instance. This may or may not be the
+same that is running the `cherokee-tweak` process.

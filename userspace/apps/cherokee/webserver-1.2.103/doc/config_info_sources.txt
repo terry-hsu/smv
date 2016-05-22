@@ -1,0 +1,110 @@
+== link:index.html[Index] -> link:config.html[Configuration]
+////
+Last checked: 2010/04/26 Cherokee 0.99.46b
+////
+
+Information Sources
+-------------------
+
+Every information source to be used by the web server is configured
+only once in this section. After that, any virtual server will be able
+to use as many as desired without having to set up the same thing over
+and over again for every one of the configured servers.
+
+This section shows the configured information sources (_Known
+sources_), the usage of sources by every defined rule in your virtual
+servers (_Source usage_) and allows the addition and edition of
+sources.
+
+There are two possible settings as *information sources*:
+
+. *Remote*: Cherokee will simply dispatch the request to the specified
+  host. As many hosts as needed can be added, and Cherokee will simply
+  apply the balancing strategy to which the information source is
+  assigned among them. If for any reason the requests made to these
+  hosts could not be performed, the processes would simply fail.
+
+. *Local*: As before, many hosts can be specified (despite the name,
+  the selection is not limited to the localhost). This works the same
+  way as the previous option. But in this case, if a request cannot be
+  responded then, instead of failing directly, the command specified
+  in the field `Interpreter` would be launched before reconnecting to
+  try again. The most common use of this would be launching the
+  service that should handle the request, but it is a flexible
+  mechanism that in theory could allow you to reroute the information
+  to allow you to serve SSH sessions via your webserver or any other
+  neat tricks you can think of. If this field is specified then the
+  parameter `Spawning timeout` can also be specified. If this limit is
+  exceeded and the interpreter has not yet been launched, Cherokee
+  will give up. The default value is 3 seconds.
+
+Note that because of Cherokee's flexibility and modularity, sometimes
+and depending of the situation one or the other setting might not
+make much sense. In such occasions `cherokee-admin` will simply hide
+whatever options do not apply.
+
+.PHP information source
+image::media/images/admin_info_sources.png[Information Sources]
+
+[[daemonization]]
+[WARNING]
+Do not provide daemonizing options as part of the command to launch a
+given interpreter.
+Cherokee's auto-spawning mechanism is very useful, since it can
+re-launch a local interpreter if for whatever reason the process had
+died unexpectedly. The launched interpreter is automatically
+daemonized, and `stdout` and `stderr` are conveniently handled in
+accordance to any logging setting you might have configured. Beware:
+some applications accept a parameter to daemonize themselves, but
+using such parameter will most likely interfere with Cherokee, so you
+are advised against that. There is no need for such parameters,
+stderr/stdout redirections, background-launching, etc.
+
+
+[TIP]
+The information about source usage allows you to see which information
+sources are currently in use in whatever rule configured along your
+list of virtual servers. This is intended as a tool to let you know
+whether you can or cannot safely remove an information source from
+your list. When you do so, the source is also removed from the rule.
+For instance, if your PHP rule was balancing among two information
+sources, by deleting one of the sources in this section you would also
+be deleting it in the corresponding rule entry. Now the PHP rule would
+balance only with one information source. This is perfectly safe. The
+problem arises whenever you want to completely exhaust the list of
+sources being balanced. Since every balancer (a generic balancer or a
+FastCGI balancer, for example) needs at least one information source,
+the rule would be broken and Cherokee would fail to start. This is
+prevented by disabling the deletion of the last source of any rule. To
+eliminate such sources you will have to manually fix the rule by
+either setting up alternative information sources or by completely
+eliminating the rule.
+
+[[unix_sockets]]
+Unix Sockets
+~~~~~~~~~~~~
+
+Note that information sources can be addressed by host:port or directly
+through Unix sockets. You only have to specify a full path to the
+socket instead of the `host:port`.
+
+For instance an entry such as `/var/tmp/socket-tmp.1` should get
+everything to simply work if that was a correct path.
+
+
+[[further_insight]]
+Further insight
+~~~~~~~~~~~~~~~
+
+This is the list of currently supported balancing strategies:
+
+* link:modules_balancers_round_robin.html[Round Robin]
+* link:modules_balancers_ip_hash.html[IP Hash]
+
+And these are the handlers that use balancing:
+
+* link:modules_handlers_proxy.html[Reverse HTTP proxy]
+* link:modules_handlers_fcgi.html[FastCGI]
+* link:modules_handlers_scgi.html[SCGI]
+* link:modules_handlers_uwsgi.html[uWSGI]
+* link:modules_handlers_dbslayer.html[MySQL bridge]

@@ -1,0 +1,57 @@
+== link:index.html[Index] -> link:basics.html[Getting started]
+////
+Last checked: 2010/04/26 Cherokee 0.99.46b
+////
+
+Upgrading Cherokee
+------------------
+
+If there is a prepackaged version of Cherokee for you platform of
+choice, we strongly encourage you to use it. Although upgrading
+Cherokee is not complicated, the prepackaged versions should make your
+upgrades much easier.
+
+Refer to the link:basics_installation_unix.html#APT[APT] section of the
+Unix installation instructions if you are using Debian or Ubuntu for
+some additional information.
+
+The current mechanism of choice to configure Cherokee did not exist
+prior to release 0.6. A lot has happened since then, and Cherokee has
+been constantly improving in terms of stability, efficiency and
+features.
+
+If you happen to be running an old version of Cherokee and would like
+to keep your current configuration settings, you can upgrade your
+cherokee.conf file.
+
+Cherokee currently supports configuration versioning, so
+from now on, whenever a change is made to the configuration file
+format, Cherokee-Admin will be able to automatically convert yours to
+the new release. You simply have to load Cherokee-Admin and it will be
+converted once you proceed to saving it.
+
+There is also a command line utility that you can use to do the exact
+same thing. It is provided under
+`$prefix/share/cherokee/admin/upgrade_config.py.`
+
+In case you need to do this manually, the usage is as follows:
+
+----
+  /usr/share/cherokee/admin/upgrade_config.py /etc/cherokee/cherokee.conf
+----
+
+Every effort is made to bulletproof the upgrade script. If an upgrade
+does not work for you, please send a bug report.  However, Cherokee is
+a very active project and has been steadily advancing and
+incorporating technical improvements. You should really be using
+link:other_bundle_cherokee-admin.html[cherokee-admin] to configure
+your system if you want to take full advantage of the new
+features. Even if the upgrade process is successful, you should use
+the new configuration file as a start point and go through the normal
+configuration process using
+link:other_bundle_cherokee-admin.html[cherokee-admin].
+
+Also, as long as you are not using an ancient configuration file,
+every new cherokee-admin release will be able to upgrade the
+configuration automatically from previous versions whenever a format
+change has been required.

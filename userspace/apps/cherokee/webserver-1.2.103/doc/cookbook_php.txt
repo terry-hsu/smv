@@ -1,0 +1,247 @@
+== link:index.html[Index] -> link:cookbook.html[Cookbook]
+
+Cookbook: Setting up PHP
+------------------------
+
+There is not much to learn to configure PHP with Cherokee.
+Cherokee-admin ships a one-click wizard that will do everything for
+you. It will look for the PHP interpreter, it will check whether it
+support FastCGI, and then it'll perform all the necessary operations
+to set it up on Cherokee. It is a piece of cake.
+
+If PHP-fpm binaries are found, those will be prioritized over the
+regular binaries.
+
+There is also a
+link:http://www.cherokee-project.com/screencasts.html#php[screencast]
+available at the
+link:http://www.cherokee-project.com/[Cherokee-Project website] to
+demonstrate how easy it is to use the PHP wizard.
+
+image:media/images/screencast.png["PHP Wizard",
+link="http://www.cherokee-project.com/screencasts.html#php"]
+
+It requires a single operation to get PHP configured on a pre-existing
+Virtual Server: Choose the virtual server your want to configure, and
+click on the `Behavior` tab and trigger the `Rule panel` by clicking
+on the `Rule Management` button. Once in there, use the `Add` button
+at the top of the panel to see the available wizards.
+
+.Wizards
+image::media/images/admin_vserver_wizard.png[Virtual Server Wizards]
+
+Now select `Languages` and run the PHP wizard. And, that's it. If you
+had `php-fpm` or `php-cgi` installed in your system, PHP should be
+configured now.
+
+
+[[php_fastcgi]]
+PHP FastCGI support
+~~~~~~~~~~~~~~~~~~~
+
+Note that only FastCGI-enabled binaries of PHP will work with the
+FastCGI handler. Many prepackaged versions already enable this by
+default. If yours does not, you will need to build a suitable
+binary. You can check this with the `-v` parameter:
+
+----
+$ php-cgi -v
+PHP 5.2.10 (cgi-fcgi) (built: Jul 11 2009 15:33:11)
+Copyright (c) 1997-2009 The PHP Group
+Zend Engine v2.2.0, Copyright (c) 1998-2009 Zend Technologies
+----
+
+You cannot proceed unless the *"cgi-fcgi"* string is present.
+
+
+[[php_env]]
+PHP process Environment Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To specify Environment Variables at the Information Source level
+be sure to uncheck **Inherit Environment**.  This will display the
+form to enter variables and values.
+
+The **PHP_FCGI_CHILDREN** environment variable is mandatory for PHP
+FastCGI servers.  It defines how much children should serve the
+requests coming from the webserver.
+
+If you define **PHP_FCGI_MAX_REQUESTS**, the value must be negative if
+you do not want the PHP process to ever be restarted. If you leave it
+unset, PHP will take the default value (500), after which it will be
+restarted. It is generally a good idea to let PHP be restarted to free
+up resources and possible memory leaks.
+
+
+[[advanced]]
+Advanced configuration
+~~~~~~~~~~~~~~~~~~~~~~
+
+Once PHP is configured, you are free to tweak the configuration to
+adapt it to your specific needs. You may want to change some of the
+php-cgi parameters, or even point Cherokee to use distributed PHP
+execution.
+
+This example shows a typical usage of FastCGI. It only uses one
+link:config_info_sources.html[information source] nicknamed `php` in
+this case. This connects to a FastCGI server located in localhost in
+port 47990. If no server is running, the webserver will run the
+FastCGI server by issuing the command defined as the *Interpreter*
+sub-parameter of the information source that is being accessed.
+
+.FastCGI rule sample
+image::media/images/admin_handler_fastcgi1.png[Fastcgi]
+
+.Common CGI options in FastCGI rule
+[options="header"]
+|====================================================================
+|Checkbox        | Value
+|Error Handler   | Checked
+|Check file      | Checked
+|Pass request    | Checked
+|Allow XSendfile | Unchecked
+|====================================================================
+
+This other example shows a typical usage of multiple FastCGI servers.
+It connects to FastCGI servers in several locations. If no server is
+running in the local computer, the webserver will run the FastCGI
+server by issuing the specified command. Note that for *remote*
+FastCGI servers, you are responsible for running the FastCGI services
+there manually.
+
+.Load balancing among information sources
+image::media/images/admin_handler_fastcgi2.png[Fastcgi]
+
+.Load balancing among information sources
+[options="header"]
+|====================================================================
+|Nick              | Host
+|PHP interpreter   | localhost:47990
+|PHP interpreter 2 | php2.cluster:47990
+|PHP interpreter 3 | php3.cluster:47990
+|====================================================================
+
+[[multi-site]]
+Multi-site support
+~~~~~~~~~~~~~~~~~~
+An even more advanced scenario would be one that required custom PHP
+settings for each virtual host.
+
+In such a scenario several information sources are required. Some
+settings can be set simply by providing ENV variables to customize the
+FastCGI behavior. Others can only be specified in the `php.ini`
+configuration file, which is read by `php-cgi` on start-up.
+
+The location of this file is platform dependent, so you will need to
+refer to PHP's documentation. It is the file located in
+'/etc/php5/cgi/php.ini' on Debian/Ubuntu systems,
+'/opt/local/etc/php5/php.ini' on MacPorts, etc.
+
+
+PHP configuration file
+^^^^^^^^^^^^^^^^^^^^^^
+You will have to customize and specify different `php.ini` files for
+each information source. A nifty trick to do this and provide custom
+environment variables is by wrapping the required parameters in a
+simple script such as this one:
+
+------
+
+#!/bin/sh
+
+export PHP_FCGI_MAX_REQUESTS=250
+export PHP_FCGI_CHILDREN=4
+
+exec /usr/local/bin/php-cgi $@
+
+# EOF
+
+------
+
+It just calls the real `php-cgi` with the ENV variables to customize the
+FastCGI behavior, passing the parameters along. The same wrapper can
+be used for every information source, providing a different `-c
+path/php.ini` for each one of them.
+
+Bare in mind that every information source will need its own port to
+run.
+
+Assuming that two customized information sources were required, simply
+specifying different interpreters for each one of them would suffice.
+
+
+[cols="10%,90%",options="header"]
+|====================================================================
+|VHost        | Interpreter
+| 1 | `/usr/local/bin/php-cgi -c /usr/local/etc/php/php-vhost1.ini -b 127.0.0.1:2998`
+
+| 2 | `/usr/local/bin/php-cgi -c /usr/local/etc/php/php-vhost2.ini -b 127.0.0.1:2999`
+|====================================================================
+
+
+This, in turn, would produce configuration entries similar to the
+following ones:
+
+------
+source!1!nick = php-vhost1
+source!1!interpreter = /usr/local/bin/php-cgi -c /usr/local/etc/php/php-vhost1.ini -b 127.0.0.1:2998
+...
+source!2!nick = php-vhost2
+source!2!interpreter = /usr/local/bin/php-cgi -c /usr/local/etc/php/php-vhost2.ini -b 127.0.0.1:2999
+------
+
+PHP configuration variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The variables specified in `php.ini` can also be overridden setting a
+custom environment variable on a per-virtual-server basis.
+
+Just access the PHP rule of your virtual server, `Extensions php`, and
+select the `Handler` tab to be able to set a custom environment
+variable for the `FastCGI` handler.
+
+You will need to provide the values in the following format:
+
+[cols="50%,50%",options="header"]
+|====================================================================
+|Name             | Value
+| PHP_ADMIN_VALUE | `memory_limit=128M`
+|====================================================================
+
+This will set the memory limit for the virtual server only. Any
+`php.ini` variable can be set using this procedure.
+
+Also, it is possible to manually specify every `php.ini` as a
+parameter of the interpreter thanks to the `-d` argument of
+PHP. Assuming you had to separate virtual servers, each with its own
+PHP information source, you could customize each of them directly
+editing the information source. This example would specify different
+memory limits for both information sources.
+
+[cols="10%,90%",options="header"]
+|====================================================================
+|VHost        | Interpreter
+| 1 | `/usr/local/bin/php-cgi -d memory_limit=256M -b 127.0.0.1:2998`
+
+| 2 | `/usr/local/bin/php-cgi -d memory_limit=32M -b 127.0.0.1:2999`
+|====================================================================
+
+[[upload_limits]]
+PHP upload limits
+~~~~~~~~~~~~~~~~~
+
+Every now and then this issue pops up: an HTTP error 400 appears
+repeatedly when uploading files to a PHP back-end.
+
+PHP has several limits in-place which can be configured through its
+`php.ini` configuration file.
+
+Two entries are related to this issue. Tweak them according to your
+necessities. In this example, we are rising the limit to 200MB.
+
+----
+; Maximum size of POST data that PHP will accept.
+post_max_size = 200M
+
+; Maximum allowed size for uploaded files.
+upload_max_filesize = 200M
+----

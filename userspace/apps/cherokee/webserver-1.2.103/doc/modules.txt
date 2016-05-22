@@ -1,0 +1,41 @@
+== link:index.html[Index] -> Modules
+
+  . link:modules_handlers.html[Handlers]: Connection handling modules.
+    - link:modules_handlers_file.html[Static Content]: Send files.
+    - link:modules_handlers_dirlist.html[Only listing]: List directories.
+    - link:modules_handlers_common.html[List & Send]: List directories and send files.
+    - link:modules_handlers_custom_error.html[HTTP error]: Generate custom HTTP errors.
+    - link:modules_handlers_redir.html[Redirection]: URL forwards and rewrites.
+    - link:modules_handlers_cgi.html[CGI]: Common Gateway Interface.
+    - link:modules_handlers_fcgi.html[FastCGI]: Fast Common Gateway Interface.
+    - link:modules_handlers_scgi.html[SCGI]: Simple Common Gateway Interface.
+    - link:modules_handlers_uwsgi.html[uWSGI]: uWSGI protocol.
+    - link:modules_handlers_proxy.html[HTTP reverse proxy]: Surrogate/reverse proxy handler.
+    - link:modules_handlers_ssi.html[Server Side Includes]: SSI Server Support.
+    - link:modules_handlers_postreport.html[Upload Reporting]: Show an upload progress bar.
+    - link:modules_handlers_streaming.html[Audio/Video Streaming]: Media streamer.
+    - link:modules_handlers_secdownload.html[Hidden Downloads]: Secure, Time expiring downloads.
+    - link:modules_handlers_server_info.html[Server Info]: Provide info about Cherokee.
+    - link:modules_handlers_dbslayer.html[MySQL bridge]: MySQL over HTTP bridge.
+    - link:modules_handlers_admin.html[Remote Administration]: Cherokee administration handler.
+    - link:modules_handlers_empty_gif.html[1x1 Transparent GIF]: Returns a 1x1 pixel transparent GIF.
+    - link:modules_handlers_drop.html[Drop Connection]: Immediately drop TCP connection.
+  . link:modules_validators.html[Validators]: Authentication mechanisms.
+    - link:modules_validators_plain.html[Plain]: Plain file mechanism.
+    - link:modules_validators_htpasswd.html[htpasswd]: htpasswd mechanism.
+    - link:modules_validators_htdigest.html[htdigest]: htdigest mechanism.
+    - link:modules_validators_ldap.html[LDAP]: Lightweight Directory Access Protocol mechanism.
+    - link:modules_validators_mysql.html[MySQL]: Database mechanism.
+    - link:modules_validators_pam.html[PAM]: Pluggable Authentication Module mechanism.
+    - link:modules_validators_authlist.html[Fixed list]: Fixed authentication list.
+  . link:modules_encoders.html[Encoders]: Compression and filtering.
+    - link:modules_encoders_gzip.html[gzip]: compress using gzip algorithm.
+    - link:modules_encoders_deflate.html[deflate]: compress using deflate algorithm.
+  . link:modules_loggers.html[Loggers]: Logging mechanisms.
+    - link:modules_loggers_combined.html[Combined]: Combined Log Format.
+    - link:modules_loggers_custom.html[Custom]: Customizable Format.
+    - link:modules_loggers_ncsa.html[Common (NCSA)]: Common Log Format.
+  . link:modules_balancers.html[Balancers]: Load balancing strategies.
+    - link:modules_balancers_round_robin.html[Round robin]: Round Robin strategy.
+    - link:modules_balancers_ip_hash.html[IP Hash]: Client IP hash strategy.
+    - link:modules_balancers_failover.html[Failover]: Failover/backup-server strategy.

@@ -1,0 +1,60 @@
+== link:index.html[Index] -> link:other.html[Other information]
+///////////////////////////////////////////////////////////////////
+Last checked:
+* Cherokee   1.0.0
+
+This document is mostly obsoleted by the built-in reporting system.
+It is kept here in case it is still not enough.
+///////////////////////////////////////////////////////////////////
+
+Most common production server errors with Cherokee
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- *Page 500*
+
+  The most common cause of an Internal Server Error within Cherokee is
+  problem of invalid headers. If your cgi script for some reason does
+  not send out a headerless (eq. Content-type: text/html) streams, you
+  will hit this bug. Check scripts, error log etc. to find out what
+  causes it.
+
+- *Page 503*
+
+  When an information source is unavailable, the server will return a
+  503 for that request. Cherokee will constantly try to find a new
+  information sources, but it will take (as most) the total amount of
+  defined sources in request to find back a working information
+  source. If a 503 stays present, you can safely assume Cherokee is
+  unable to start an interpreter or connect to the remote host that
+  has the information source defined.
+
+- *Page 400*
+
+  If you are repeatedly receiving a 400 error while uploading files to
+  a PHP backend, it could very well be related to PHP being the one
+  restricting uploads bigger than a certain size. Check the [PHP
+  recipe] for more details on how to fix this.
+
+- *CLI*: Can't bind() socket (port=80, UID=1000, GID=1000)
+
+  Most likely Cherokee is unable to start because you are not
+  root. And you want to bind the webserver to a privileged port (80).
+
+- *CLI*: Can't bind() socket (port=80, UID=0, GID=0)
+
+  When you are root and get this message. There is a running Cherokee
+  instance. The most efficient way to get rid of it:
++
+----
+  killall -s KILL cherokee
+  killall -s KILL cherokee-worker
+----
+
+Restarting
+~~~~~~~~~~
+
+- If you just want to restart the webserver, this will do:
++
+----
+  killall -s HUP cherokee
+----

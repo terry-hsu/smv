@@ -1,0 +1,43 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_handlers.html[Handlers]
+
+Handler: Remote Administration
+------------------------------
+
+This handler is used to create rules that can provide information
+about the running server useful for System Administration.
+When any such rule is matched, a
+link:other_bundle_cherokee-tweak.html[cherokee-tweak] instance will have
+full access to this data stream.
+
+Note that providing real-real time information about the status of a
+web server in production is a double edged blade. It is both a very
+valuable tool for system administration *and* a severe security risk
+if no precautions are taken. You are strongly encouraged to both
+encrypt the channel and disable public access.
+
+There are no parameters to be configured for this handle.
+
+The information provided covers a wide spectrum: ports (secured and
+non-secured), TX/RX status, connections, threads, backup mode and
+selectable system traces such as the ones provided by CHEROKEE_TRACE.
+
+Check the link:dev_debug.html[Debugging] section for more details on
+this, and the section about
+link:other_bundle_cherokee-tweak.html[cherokee-tweak] for specific usage
+information.
+
+Also, you should think of this handler as a web-service. In fact,
+cherokee-tweak is just a client application using consuming
+it. Writing custom client-apps that make use of this handler is almost
+trivial, since commands can be issued from the command line using
+`curl`.
+
+.Command line examples:
+------------------------------------------------------------------------
+echo 'set server.trace time,thread,all' | curl -v http://localhost/admin/ -u myuser:mypassword --data-binary @-
+echo 'set server.trace none'            | curl -v http://localhost/admin/ -u myuser:mypassword --data-binary @-
+echo 'get server.connections'           | curl -v http://localhost/admin/ -u myuser:mypassword --data-binary @-
+echo 'close server.connection 100'      | curl -v http://localhost/admin/ -u myuser:mypassword --data-binary @-
+echo 'get server.sources'               | curl -v http://localhost/admin/ -u myuser:mypassword --data-binary @-
+echo 'kill server.source 3'             | curl -v http://localhost/admin/ -u myuser:mypassword --data-binary @-
+------------------------------------------------------------------------

@@ -1,0 +1,57 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_handlers.html[Handlers]
+
+Handler: Server Info
+--------------------
+
+The Server Info handler is used to create rules that can provide
+information about the web server. When these rules are matched,
+information regarding Cherokee's status will be displayed. The
+information will be refreshed every 30 seconds.
+
+But that is not all. Besides the HTML output, the handler makes the
+information available for direct consumption by some of the most
+popular programming languages.
+
+[cols="35%,65%",options="header"]
+|==============================================================
+|Language   | Web path
+|Python     | <HANDLER WEBDR>/info/py
+|Ruby       | <HANDLER WEBDR>/info/ruby
+|PHP        | <HANDLER WEBDR>/info/php
+|Javascript | <HANDLER WEBDR>/info/js
+|==============================================================
+
+
+The `type` parameter specifies influences the verbosity of the output.
+
+[cols="20%,10%,70%",options="header"]
+|==============================================================
+|Parameters |Type   |Description
+|type       |String |just_about \| normal \| connection_details
+|==============================================================
+
+If set to `just_about`, it will display:
+
+* Release number of Cherokee.
+* Brief license notice.
+
+If set to `normal`, some extra information will be provided regarding:
+
+* General Information
+* Server Core
+* Current connections
+* Loaded Modules
+* Icons
+* File Caching
+
+If set to `connection_details` it will also  provide more detailed
+information about the existing connections:
+
+* ID
+* Remote IP
+* Phase
+* Request
+* Handler
+* Info sent
+* Info received
+* Icon

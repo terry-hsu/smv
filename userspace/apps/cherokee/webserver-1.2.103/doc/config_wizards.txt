@@ -1,0 +1,119 @@
+== link:index.html[Index] -> link:config.html[Configuration]
+////
+Last checked: 2010/04/26 Cherokee 0.99.46b
+////
+
+Configuration Wizards
+---------------------
+
+A whole lot of effort has been invested in making Cherokee as painless
+to configure as possible. To this extent, its nifty configuration
+interface is shipped with a bunch of configuration assistants.
+
+These will help you to set up Cherokee to work with several popular
+applications, frameworks and programming languages, and hopefully your
+task will be performed with just a couple of clicks.
+
+Even if they might not apply exactly to what you are trying to
+accomplish, they can always be used as a template that you can fine
+tune afterwards.
+
+Some of the wizards can only be applied to new virtual servers, others
+can only be used inside pre-existent ones. Most of them, however, are
+good for both scenarios.
+
+Using them is as simple as clicking on `Add New` button located in the
+upper part of the left panel, on the `vServers` section of the
+admin. It is one of the two buttons available, and is marked with a
+*+* (plus) symbol. This panel can change from `Virtual Server` mode to
+`Behavior` mode, depending on it being applied to all the virtual
+servers or to a specific one. In the former scenario the wizards will
+create a new customized virtual host upon successful execution. The
+latter scenario will have the wizards modify an existing pre-selected
+virtual host.
+
+Changing the way in which the wizards should behave is as simple as
+toggling the panel in and out of `Virtual Servers` or `Behavior` modes. To
+go to `Behavior` mode, select a virtual server and click on the `Rule
+Management` button of the `Behavior` tab. To go to `Virtual Servers`
+mode, simply click on the link for the virtual server that is
+displayed in the upper section of the main content area. If there is
+no such link, the panel is already in `Virtual Server` mode.
+
+Most of the wizards are documented on their corresponding recipes in
+the link:cookbook.html[Cookbook].
+
+The wizards are loosely organized on several categories: CMS,
+platforms, tasks, misc, etc. Take a look at them. You might find
+something interesting in the least expected place.
+
+These are the wizards currently implemented:
+
+Available Wizards
+~~~~~~~~~~~~~~~~~
+
+* link:cookbook_alfresco.html[Alfresco]: open source ECM.
+
+* link:cookbook_coldfusion.html[ColdFusion]: ColdFusion platform.
+
+* link:cookbook_concrete5.html[Concrete5]: Content management system.
+
+* link:cookbook_django.html[Django]: high-level Python Web framework.
+
+* link:cookbook_drupal.html[Drupal]: open source content management
+
+* link:cookbook_glassfish.html[GlassFish]: open source enterprise Java
+  EE software
+
+* HotLinking: prevent your files from being hot-linked.
+
+* Icons: adds the usual icon rules.
+
+* link:cookbook_joomla.html[Joomla]: dynamic portal engine and content
+  management system.
+
+* link:cookbook_liferay.html[Liferay]: Enterprise Open Source Portal,
+  CMS, Web Publishing, Collaboration, and Social Networking Software.
+
+* link:cookbook_mailman.html[Mailman]: Mailman is free software for
+  managing electronic mail discussion and e-newsletter lists.
+
+* MediaWiki: Free wiki engine written in PHP for use in Wikipedia.
+
+* link:cookbook_mono.html[Mono.NET]: .NET open source framework.
+
+* link:cookbook_moodle.html[Moodle]: Course Management System.
+
+* link:cookbook_phpbb.html[phpBB]: Forum software.
+
+* link:cookbook_phpmyadmin.html[phpMyAdmin]: MySQL administration web
+  interface.
+
+* link:cookbook_php.html[PHP]: PHP configuration.
+
+* Redirect: assits in configuring redirections.
+
+* link:cookbook_ror.html[RoR]: Ruby on Rails configuration.
+
+* rTorrent: BitTorrent client.
+
+* Static: adds the usual rules to manage static contents.
+
+* link:cookbook_streaming.html[Streaming]: assists in media streaming
+  configuration.
+
+* link:cookbook_sugarcrm.html[Sugar]: open-source Customer
+  Relationship Management.
+
+* link:cookbook_symfony.html[Symfony]: Symfony PHP web development
+  framework.
+
+* link:cookbook_trac.html[Trac]: open source, web-based project
+  management and bug-tracking tool.
+
+* link:cookbook_uwsgi.html[uWSGI]: UWSGI server aimed for professional python webapps deployment and development.
+
+* link:cookbook_wordpress.html[WordPress]: blog publishing application
+  and content management system.
+
+* link:cookbook_zend.html[Zend]: PHP web development framework.

@@ -1,0 +1,234 @@
+== link:index.html[Index] -> link:basics.html[Getting started] -> link:basics_installation.html[Installation]
+////
+Last checked: 2010/04/26 Cherokee 0.99.46b
+////
+
+Installation on Unix
+--------------------
+
+If you have a prepackaged version of Cherokee available in your
+Unix/Linux favorite variant, please use the provided installation
+mechanism of choice. This will provide you with automatic bootup
+scripts, consistency and dependency checks, and an easy upgrade path
+tailored to your system whenever a new package is available.
+
+Skip through to the link:#APT[APT] section of this document if you are using Debian or Ubuntu.
+
+If you do not find a prepackaged version that suits your needs, you
+can always download and compile your own.
+
+[[quickstart]]
+Quickstart
+~~~~~~~~~~
+
+. link:basics_download.html[Download] a fresh copy of Cherokee
+. Configure the package for your system:
++
+-----------------------------------------
+./configure --localstatedir=/var     \
+            --prefix=/usr            \
+            --sysconfdir=/etc        \
+            --with-wwwroot=/var/www
+-----------------------------------------
+
+. Compile the package:
++
+-----------------------------------------
+make
+-----------------------------------------
+
+. Install the programs and any data files:
++
+-----------------------------------------
+make install
+-----------------------------------------
+
+. Start link:other_bundle_cherokee-admin.html[cherokee-admin]
+
+[[advanced]]
+Advanced parameters
+~~~~~~~~~~~~~~~~~~~
+
+If you want to learn more about 'configure' you can run `./configure
+--help`. The list of parameter is extensive, so you might want to take
+a look at it, particularly if you are a developer. Some of the most
+used parameters are these:
+
+[cols="43%,57%",options="header"]
+|======================================================================
+|Parameter               |Description
+|`--with-wwwroot=DIR`    |Specify the webserver root directory
+|`--with-wwwuser=USER`   |Custom username under which the server will run
+|`--with-wwwgroup=GROUP` |Custom group under which the server will run
+|`--disable-epoll`       |Disable epoll() support
+|`--disable-pthread`     |Disable threading support
+|`--disable-readdir_r`   |Disable readdir_r usage
+|`--disable-ipv6`        |Disable IPv6 support
+|`--disable-pam`         |Disable PAM support
+|`--disable-admin`       |Skips cherokee-admin installation
+|`--disable-largefile`   |omit support for large files
+|`--enable-internal-pcre`|Enable internal PCRE
+|`--disable-nls`         |do not use Native Language Support
+|`--enable-beta`         |Enable beta development
+|`--enable-trace`        |Enable the tracing mechanism
+|`--enable-backtraces`   |Enable backtraces on error
+|`--disable-epoll`       |Disable epoll() support
+|`--enable-static-module=MODULE`| build listed modules as static. Accepts ALL
+|======================================================================
+
+[[autostart]]
+Autostart
+~~~~~~~~~
+
+If you need the cherokee webserver to start at boot (through init's
+runlevel) you can find a start/stop script in the contrib source
+directory:
+
+-----------------------------------------
+cp contrib/cherokee /etc/init.d/
+-----------------------------------------
+
+Additionally, you need to create symlinks at the correct rc directory
+of the appropriate runlevel. This can be done in many ways and usually
+each distribution offers its own tools to do so.
+
+
+
+[[APT]]
+APT
+~~~
+
+This section is intended for those who use Debian and Ubuntu and want
+to use the latest -and greatest- version of Cherokee when it is not
+yet available on the APT repositories. You can do several things
+besides installing manually.
+
+For Ubuntu users, simply use the PPA repository. Normally when a new
+Cherokee version is released, the repositories will be swiftly
+updated. Simply type:
+
+----
+sudo add-apt-repository ppa:cherokee-webserver
+----
+
+That will add the PPA keys. You just need to sudo apt-get update
+afterwards.
+
+Please note that there are two Launchpad Cherokee repositories: the
+link:https://edge.launchpad.net/~cherokee-webserver/+archive/ppa/+packages[current]
+(stable) repository and the new repository called
+link:https://edge.launchpad.net/~cherokee-webserver/+archive/i-tse[i-tse]
+('new' in Cherokee language).
+
+Everytime a new cherokee version is released it goes straight to the
+the i-tse repository. If no critical bugs are found or no new version
+is released within 8 days, this version is then moved moved to the
+current PPA. It is also pushed to Debian Unstable.
+
+Doing this ensures that production servers using the current version
+get a tested version every time they upgrade.
+
+If you want to use the i-tse ( NEW ) version just add the new repository:
+
+.Ubuntu Lucid
+----
+sudo add-apt-repository ppa:cherokee-webserver/i-tse
+----
+
+.Karmic, Jaunty, Hardy: add this to your sources.list
+----
+deb http://ppa.launchpad.net/cherokee-webserver/i-tse/ubuntu YOURVERSION main
+----
+
+For Debian users, you will have to use packages from 'Unstable' or
+'Testing' if you want to keep up.
+
+Cherokee does not have deep dependencies, so apt-pinning might be
+enough for you.
+
+The APT suite can handle more than one set of packages with
+different priorities. If you want to get the latest Cherokee off
+unstable, you can make your /etc/apt/sources.list be:
+
+------------------------------------------------------------
+ deb http://ftp.debian.org/debian/ lenny main
+ deb-src http://ftp.debian.org/debian/ lenny main
+
+ deb http://ftp.debian.org/debian/ sid main
+ deb-src http://ftp.debian.org/debian/ sid main
+------------------------------------------------------------
+
+And set your preferences to lenny in /etc/apt/preferences:
+
+------------------------------------------------------------
+ Package: *
+ Pin: release a=stable
+ Pin-priority: 900
+
+ Package: *
+ Pin: release a=testing
+ Pin-priority: 200
+------------------------------------------------------------
+
+Just make the pin-priority lower. Then, `aptitude update` to get the
+full lists, and install Cherokee from unstable:
+
+----
+# aptitude -t testing install cherokee
+----
+
+This will probably pull newer versions of libssl-dev, libssl0.9.8 and
+mysql-common to fulfill dependencies. Of course, this _might_ break
+other packages depending on those specific versions, but it is not
+very likely.
+
+
+[[debian_from_source]]
+Debian package from source
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+PPA and Unstable repositories keep up to date with the latest Cherokee
+releases. Usually the time lapse between releasing a new version and
+having the repositories updated is really short.
+
+However, in the event that they arent, some options remain if you want
+to enjoy the latest Cherokee enhancements. Besides building directly
+from our GIT repository, you can build from source for
+Debian/Ubuntu. You will be able to build it cleanly in a `.deb`
+package with dependencies, and push the new release as fast as
+possible to production.
+
+The process is very straight forward. As with any Debian package, it
+should be enough just to download the source package, get its
+build-dependencies, and build.
+
+----
+$ apt-get source cherokee
+(...)
+$ sudo apt-get build-dep cherokee
+(...)
+$ cd cherokee-*     # depending on your version
+$ debuild
+----
+
+Of course, if you want to contribute to Debian/Ubuntu packaging, it is
+a _bit_ more involved.
+
+You should instead clone the Git repository at
+link:git://git.debian.org/collab-maint/cherokee.git[git://git.debian.org/collab-maint/cherokee.git]
+
+After that, the process for building is very similar. You only need to
+get Cherokee's official sources, which can be done running the
+following command within the Cherokee tree:
+
+----
+$ uscan --force
+----
+
+And build using git-buildpackage:
+
+----
+$ git-buildpackage
+----
+
+That's it.

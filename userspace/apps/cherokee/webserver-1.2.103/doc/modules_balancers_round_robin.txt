@@ -1,0 +1,11 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_balancers.html[Balancers]
+
+Balancer: Round Robin
+---------------------
+
+If multiple server entries are defined, the requests will be round-robinly
+served by each of them.
+
+The only thing needed to configure this balancer is a list of
+link:config_info_sources.html[information sources]. At least one must
+be selected in order for this to work.

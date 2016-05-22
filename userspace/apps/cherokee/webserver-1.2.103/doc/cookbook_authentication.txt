@@ -1,0 +1,234 @@
+== link:index.html[Index] -> link:cookbook.html[Cookbook]
+
+Cookbook: Authentication
+------------------------
+
+In this section you will find information useful to set up
+authentication mechanisms with several of Cherokee's validators.
+
+You can find information and basic examples in each validator's
+documentation. This is the list of validator modules provided by
+Cherokee:
+
+* link:modules_validators_htdigest.html[htdigest]
+* link:modules_validators_htpasswd.html[htpasswd]
+* link:modules_validators_ldap.html[LDAP]
+* link:modules_validators_mysql.html[MySQL]
+* link:modules_validators_pam.html[PAM]
+* link:modules_validators_plain.html[Plain]
+* link:modules_validators_authlist.html[Fixed List]
+
+You will also find interesting information in the
+link:modules_validators_plain.html["Validator Modules Overview"] and
+step by step examples for Plain and PAM mechanisms in the
+link:config_walkthrough.html["Quickstart"] section.
+
+There are two types of authentication:
+
+*basic*::
+    This method sends the username and password in clear text over the network.
+    It is not the most secure method.  If the connection to the web server is
+    through HTTPS then this method is as secure as the encryption used.  This
+    method is very easy to implement, so most clients support it.
+
+*digest*::
+    This method is by far the most secure, but also more complex.  Most modern
+    web browsers support this method.
+
+
+The details to set up the `htdigest` and `htpasswd` are exactly the
+same as for `plain` validation. The only difference is the tools used
+to create the passwords' file.
+
+[[htdigest]]
+=== htdigest
+
+To use this validator you will need a file created by the `htdigest`
+command. It is a tool to manage user files for digest (and basic)
+authentication.
+
+****
+Syntax::
+  htdigest [ -c ] passwdfile realm username
+
+The only optional parameter is `-c`, used to create the passwdfile or
+overwrite it if it is present.
+****
+
+To create a file for a `testuser` with `testpassword` you would have
+to issue:
+
+-----
+$ htdigest -c passwords.digest secret testuser
+Adding password for testuser in realm secret.
+New password:
+Re-type new password:
+
+$ cat pass
+testuser:secret:f24f76261bcd65780b33edde00855897
+-----
+
+[[htpasswd]]
+=== htpasswd
+
+For this validator, the tool `htpasswd` is needed to create the
+files. The basic usage information is this:
+
+*****
+Usage::
+        htpasswd [-cmdpsD] passwordfile username
++
+        htpasswd -b[cmdpsD] passwordfile username password
++
+        htpasswd -n[mdps] username
++
+        htpasswd -nb[mdps] username password
+*****
+
+Refer to its documentation for details about the parameters. For our example, this
+will suffice:
+
+----
+$ htpasswd -c /var/www/.htpasswd testuser
+New password:
+Re-type new password:
+Adding password for user testuser
+
+$ cat /var/www/.htpasswd
+testuser:iqLGh2g/7bX7M
+----
+
+Remember that it is never recommended to place the file with the
+passwords in a location fetchable from the webserver. This is true for
+plain validation, htdigest, htpasswd and whatever file based system
+you cross paths with.
+
+
+[[mysql]]
+=== MySQL
+
+Lets set up a simple server requiring authentication against a MySQL
+database to fetch any content.
+
+First, lets define a unique rule in our virtual server managed by the
+`List and Send` handler. Through the `Security` tab we can configure
+it to use MySQL as authentication mechanism. Filling up just the
+essential fields will be enough. Those are realm, database name, user,
+password, and an SQL query that must return one row with one column as
+password.
+
+image::media/images/cookbook_mysql_validator.png[MySQL validator set up]
+
+In this case, we have used:
+
+----
+SELECT password FROM auth_users WHERE username = '${user}'
+----
+
+And that is about it.
+In this example you will need a MySQL server running (localhost in
+this case, as it takes the default value), a database called
+`cherokee` with `cherokee` as user and password, and a table that
+suits the shown query.
+
+
+Assuming you have a MySQL user with privileges granted to create
+databases, a MySQL session similar to this one would suffice:
+
+----
+$ mysql -u cherokee -D cherokee -p
+
+mysql> CREATE DATABASE cherokee;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> CREATE TABLE auth_users(
+       username varchar(32),
+       password varchar(32),
+       PRIMARY KEY (username));
+Query OK, 0 rows affected (0.00 sec)
+
+mysql> INSERT INTO auth_users VALUES('cherokee','cherokee');
+Query OK, 1 row affected (0.00 sec)
+
+mysql> quit
+----
+
+When we are done, our simple virtual server should only have a
+`Default` rule, managed by the `List & Send` hander, and with `MySQL`
+authentication set.
+
+image::media/images/cookbook_mysql_rule.png[MySQL Authenticated rule]
+
+And any content requested to Cherokee will require prior
+authentication against the database.
+
+
+[[example]]
+Another usage example
+~~~~~~~~~~~~~~~~~~~~~
+
+As you can see, getting the hang of how authentication works is pretty
+easy. Let's illustrate another easy example. How to serve PHP files,
+both from a protected location and an unprotected one?
+
+Let's assume our locations are targets are:
+- /unprotected/*.php
+- /protected/*.php
+
+Well... this would be really easy. You just have to remember that
+rules are evaluated from top to bottom, and the evaluation proceeds
+until a final rule is matched.
+
+This means that we would only have to be careful with the order of our
+rules, and it would be as simple as setting a couple of rules:
+
+- The first one, of type `Directory` applied to the path
+  `/protected`. This would be the top rule, should use one of the
+  authentication mechanisms mentioned above and should not be set as
+  _FINAL_.
+
+- The second one, of type `Extension` would apply to `php` files and
+  should be configured as according to the link:cookbook_php.html[PHP
+  recipe]. This one should be a _FINAL_ rule.
+
+And this would be more than enough. The files from the secure location
+would match the first rule and the authentication would be
+required. In case it was successful, not being a final rule, the
+request would proceed to the second rule. Once there, the regular
+processing of PHP files would take place. This one is a _FINAL_ rule,
+so the rule evaluation would stop.
+
+In case the PHP files were not being requested from the secured
+directory, just the second rule would apply.
+
+
+[[fixed_list]]
+=== Fixed list
+
+For this validator you will only need to add user-password pairs, and
+the mandatory `realm` field.
+
+image::media/images/admin_validators_authlist.png[Fixed List]
+
+
+[[ldap]]
+=== LDAP
+
+Here is a basic example of the LDAP validator in action. It assumes
+you have a working LDAP service running at your localhost, and it uses
+no TLS of CA files.
+
+[cols="50%,50%",options="header"]
+|=============================================================
+|Field			| Value
+|Validation Mechanism	|`LDAP Server`
+|Methods		|  `Basic`
+|Realm			| secret
+|Server			| localhost
+|Port			| 389
+|Bind Domain		| my_domain
+|Bind Password		| my_password
+|Base Domain		| example.com
+|=============================================================
+
+image::media/images/admin_validators_ldap.png[LDAP example]

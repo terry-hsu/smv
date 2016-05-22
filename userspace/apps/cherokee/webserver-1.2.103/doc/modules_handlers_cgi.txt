@@ -1,0 +1,132 @@
+== link:index.html[Index] -> link:modules.html[Modules] -> link:modules_handlers.html[Handlers]
+
+Handler: CGI
+------------
+
+The cgi handler executes CGI programs.
+
+[[parameters]]
+Parameters
+~~~~~~~~~~
+
+This module accepts three parameters:
+
+[cols="30%,15%,55%",options="header"]
+|====================================================================
+|Parameters           |Type    |Description
+|Script Alias         |String  |It defines a kind of execution
+                                interpreter. The CGI will be run as a
+                                parameter of this script.
+|Change to UID        |String  |Executes each CGI under its owner's
+                                user ID.
+|Error handler        |Boolean |Use CGI output as error message.
+|Check file           |Boolean |Check file existence to build
+                                PATH_INFO and SCRIPT_NAME.
+|Pass request         |Boolean |Pass request headers.
+|Allow X-Sendfile     |Boolean |Use the non-standard X-Sendfile
+                                header.
+|Pass Request Headers |Boolean |Forward all the headers to the CGI as
+                                HTTP_*
+|====================================================================
+
+Note that the link:other_goodies.html#x-sendfile[X-Sendfile] feature
+also supports `X-Accel-Redirect` headers transparently. This is to
+allow the migration of applications supporting it whithout having to
+make major code rewrites.
+
+[[check_file_warning]]
+Warning:
+~~~~~~~~
+
+The `Check file` flag affects how PATH_INFO and SCRIPT_NAME are
+generated. You should disable this when you have an application that
+is running the whole virtual server tree, as it is a common source of
+problems. You can look at a practical example about PATH_INFO in the
+link:modules_handlers_common.html[List & Send] handler documentation.
+
+`Check file` must be disabled for cases such as Rails, Django, etc,
+where everything that arrives to Cherokee must be re-sent to the
+framework as request.
+
+Enabling `Check file` is the way to go if you are using any kind of
+file-based system, such as PHP.
+
+If you are unsure of the way this is being taken into account, try
+both settings and see how your application behaves.
+
+
+[[examples]]
+Examples
+~~~~~~~~
+
+This is a pretty common example. It defines a directory called `cgi`
+that points to a path out of the Sever root directory where the
+CGI programs are located.
+
+.Handler CGI configuration
+[cols="50%,50%"]
+|====================================================================
+|Handler              | CGI
+|Document Root        | /usr/lib/cgi-bin
+|Script Alias         | None
+|Change UID           | Disabled
+|Error handler        | Disabled
+|Check file           | Enabled
+|Pass Request Headers | Enabled
+|Allow X-Sendfile     | Disabled
+|====================================================================
+
+.Handler CGI intreface
+image::media/images/admin_handler_cgi.png[CGI]
+
+.Script Alias
+Another example could be the case where you wanted your default
+requests to be managed by a specific script.
+
+A real life example could be running
+link:http://trac.edgewall.org[Trac] as a CGI script. In that case you
+would want to map an URL to the trac.cgi script.
+
+For this you only need to set up the Script Alias option. Assuming you
+are using a `Directory`-type rule for the path `/trac` managed by the
+`CGI` handler, you could set `/usr/share/trac/cgi-bin/trac.cgi` as
+Script Alias.
+
+After this, every request that matched the `/trac` path would be
+managed by the `trac.cgi` script.
+
+//////
+Environment variables
+~~~~~~~~~~~~~~~~~~~~~
+
+When working with CGI and redirections, sometimes it is convenient to
+have some persistent information between the CGI invocations. This is
+the case when an error has to be redirected to a error-handling page.
+
+To ease up accessing such values, some server environment variables are
+set by Cherokee. The complete list of environment variables added
+follows:
+
+This info will be added upon completion of issue 40
+
+* REDIRECT_URL: the URL-path that was not found. For example, if a
+  missing page -`http://example.net/nonexistent.htm`- was requested,
+  this variable would be set to `/nonexistent.html`.
+
+* REDIRECT_STATUS: the HTTP response obtained from the original
+  request. This is `404`.
+
+* REDIRECT_REQUEST_METHOD: the method of the original request, such as
+  GET or POST.
+
+* REDIRECT_ERROR_NOTES: a brief description of what went wrong, for
+  example, "File does not exist: /usr/local/docroot/nonexistent.html".
+
+* SERVER_ADDR: This will typically be `::1` which is a unicast
+  localhost address. This means that the packets sent to this address
+  will be looped back on the same virtual interface.
+
+* SERVER_PORT: Port to which the request was performed originally.
+
+* REMOTE_PORT: Port to which the request was served.
+//////

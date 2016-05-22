@@ -1,0 +1,37 @@
+== link:index.html[Index] -> link:modules.html[Modules]
+
+Modules: Balancers
+------------------
+
+These Cherokee modules allow to balance the load among several
+servers. Cherokee is completely modular, and thus a distinction must
+be made clear.
+
+Balancer modules only implement the balancing strategy. To actually
+use one of these strategies you will need to select a
+link:modules_handlers.html[handler] that makes use of balancers in the
+link:other_bundle_cherokee-admin.html[cherokee-admin] interface.
+
+These handlers can be chosen within the
+`Handler` tab of the link:config_virtual_servers_rule.html[Rule
+Options] section.
+
+Every balancing strategy is used to manage one or more
+link:config_info_sources.html[information sources], so at least one
+has to be added to the pool managed by the balancer. To do this,
+simply choose among the available sources in the `Assign Info
+Sources`.
+
+This is the list of currently supported balancing strategies:
+
+* link:modules_balancers_round_robin.html[Round Robin]
+* link:modules_balancers_ip_hash.html[IP Hash]
+* link:modules_balancers_failover.html[Failover]
+
+And these are the handlers that use balancing:
+
+* link:modules_handlers_proxy.html[Reverse HTTP Proxy]
+* link:modules_handlers_fcgi.html[FastCGI]
+* link:modules_handlers_scgi.html[SCGI]
+* link:modules_handlers_uwsgi.html[uWSGI]
+* link:modules_handlers_dbslayer.html[MySQL bridge]

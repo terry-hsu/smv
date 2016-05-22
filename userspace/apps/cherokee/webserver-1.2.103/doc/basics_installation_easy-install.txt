@@ -1,0 +1,57 @@
+== link:index.html[Index] -> link:basics.html[Getting started] -> link:basics_installation.html[Installation]
+////
+Last checked: 2011/02/16 Cherokee 1.0.21b
+////
+
+Easy installation
+-----------------
+The easiest way to install Cherokee is by using the script provided
+for easy installations. It compiles and installs the latest version of
+the server with a single command:
+
+----
+wget http://cherokee-project.com/install && python install
+----
+
+or
+
+----
+curl -LO http://cherokee-project.com/install && python install
+----
+
+The easy installation script is the express way to make a Cherokee
+installation as seamless and hassle-free as possible.  It will build
+and install everything under `/opt/cherokee`, and by deleting that
+directory you could totally purge Cherokee from your system.
+
+If you require further customization, this script is not for you. The
+other -more elaborate- link:basics_installation.html[installation
+methods] will fulfill your needs. Particularly when there is a
+prepackaged version of Cherokee available for your architecture you
+should follow that route. That will provide you with automatic bootup
+scripts, consistency and dependency checks, and an easy upgrade path
+tailored to your system whenever a new package is available.
+
+
+Development mode
+~~~~~~~~~~~~~~~~
+
+The easy installation script supports several parameters. To see a
+full list of parameters, just add the `--help` parameter:
+
+----
+wget http://cherokee-project.com/install && python install --help
+----
+
+The only one really worth mentioning is the one to trigger the
+`development mode`:
+
+----
+wget http://cherokee-project.com/install && python install --devel
+----
+
+This will build a bleeding edge release, taking the sources from the
+latest development snapshot, enabling traces, and making the
+installation under `/opt/cherokee-dev`, so that it can coexist with a
+regular installation.
+

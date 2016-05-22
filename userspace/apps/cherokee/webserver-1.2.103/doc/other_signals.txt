@@ -1,0 +1,23 @@
+== link:index.html[Index] -> link:other.html[Other information]
+
+Other: Signals
+--------------
+
+link:other_bundle_cherokee-admin.html[Cherokee-Admin] is all you need to
+interact with Cherokee. However, should you want to tap directly into
+the underlying communication mechanism you would need to send the
+supported signals to the  link:other_bundle_cherokee.html[cherokee] process.
+
+If needed it will relay the appropriate signals to any
+link:other_bundle_cherokee-worker.html[cherokee-worker] instances.
+
+The following signals are supported by Cherokee:
+
+[cols="20%,80%",options="header"]
+|==================================================================
+|Parameters |Description
+|SIGHUP     |Restarts the server gracefully
+|SIGUSR1    |Restarts the server closing all the opened connections
+|SIGUSR2    |Reopens the log files
+|SIGTERM    |Exits
+|==================================================================

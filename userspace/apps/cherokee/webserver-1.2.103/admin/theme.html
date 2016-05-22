@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+       "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head>
+   <title>%(title)s - Cherokee Admin</title>
+%(head)s
+   <script type="text/javascript" src="/CTK/js/jquery-1.3.2.min.js"></script>
+ </head>
+ <body%(body_props)s>
+ <div id="topbar-container">
+ <!-- XXX: @ion: Don't know if this is the place to load the top bar... -->
+   <div id="topbar">
+    <img src="/static/images/cherokee-logo-bar.png" alt="Cherokee"/>
+    <div id="save-box"><button id="save-button" class="button">%(save)s</button></div>
+    <ul id="nav">
+    <li id="nav-index"><a href="/">%(home)s</a></li>
+    <li id="nav-status"><a href="/status">%(status)s</a></li>
+    <li id="nav-general"><a href="/general">%(general)s</a></li>
+    <li id="nav-vservers"><a href="/vserver">%(vservers)s</a></li>
+    <li id="nav-source"><a href="/source">%(sources)s</a></li>
+    <li id="nav-advanced"><a href="/advanced">%(advanced)s</a></li>
+    </ul>
+   </div>
+ </div>
+ <div id="container">
+   %(HELP_HTML)s
+
+   <div id="main">
+     <div id="activity"><span>%(updating)s</span></div>
+     %(html)s
+   </div>
+ </div>
+
+ <!-- Place Javascript at the end -->
+ %(js)s
+
+ <script type="text/javascript">
+   %(HELP_JS)s
+
+   $('.del').live('mouseover', function(){
+         $(this).attr('src', '/CTK/images/del-hover.png');
+   }).live('mouseout', function(){
+         $(this).attr('src', '/CTK/images/del.png');
+   });
+ </script>
+ </body>
+</html>
