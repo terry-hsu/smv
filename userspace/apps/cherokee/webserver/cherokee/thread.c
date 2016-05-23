@@ -43,6 +43,7 @@
 #include "limiter.h"
 #include "flcache.h"
 
+#include <ribbon_lib.h>
 
 #define DEBUG_BUFFER(b)  fprintf(stderr, "%s:%d len=%d crc=%d\n", __FILE__, __LINE__, b->len, cherokee_buffer_crc32(b))
 #define ENTRIES "core,thread"

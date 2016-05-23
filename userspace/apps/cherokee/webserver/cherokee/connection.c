@@ -87,7 +87,7 @@
 ret_t
 cherokee_connection_new  (cherokee_connection_t **conn)
 {
-	CHEROKEE_NEW_STRUCT(n, connection);
+	CHEROKEE_NEW_STRUCT(n, connection);//malloc
 
 	INIT_LIST_HEAD (&n->list_node);
 
