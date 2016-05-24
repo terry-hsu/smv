@@ -1,0 +1,1 @@
+./autogen.sh --prefix=/home/terry/workspace/smv/userspace/apps/cherokee/build/ LIBS=-lsmv_lib
