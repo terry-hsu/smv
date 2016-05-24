@@ -747,6 +747,8 @@ static inline void
 show_signal_msg(struct pt_regs *regs, unsigned long error_code,
 		unsigned long address, struct task_struct *tsk)
 {
+	struct vm_area_struct *walk = tsk->mm->mmap;
+
 	if (!unhandled_signal(tsk, SIGSEGV))
 		return;
 
@@ -758,9 +760,17 @@ show_signal_msg(struct pt_regs *regs, unsigned long error_code,
 		tsk->comm, task_pid_nr(tsk), address,
 		(void *)regs->ip, (void *)regs->sp, error_code);
 
-	print_vma_addr(KERN_CONT " in ", regs->ip);
-
+	print_vma_addr(KERN_CONT " in ", regs->ip);	
 	printk(KERN_CONT "\n");
+
+	/* Dump vma and their memdom id */
+	if (tsk->mm->using_smv) {	
+		while (walk) {
+			printk(KERN_ERR "[%s] ribbon %d vma->vm_start: 0x%16lx to vma->vm_end: 0x%16lx, vma->memdom_id: %d\n",
+							 __func__, tsk->ribbon_id, walk->vm_start, walk->vm_end, walk->memdom_id);	
+			walk = walk->vm_next;
+		}
+	}
 }
 
 static void
@@ -1070,11 +1080,12 @@ static noinline void fault_info(unsigned long addr, struct vm_area_struct *vma, 
 		return;
 	}
 
-	slog(KERN_INFO "\n-- [%s] pid %d ribbon %d page fault at 0x%16lx, page_aligned_addr: 0x%16lx, vma->memdom_id: %d--\n",
-						__func__, tsk->pid, tsk->ribbon_id, addr, page_aligned_addr, vma->memdom_id);
-    slog(KERN_INFO "-- [%s] prot: %d, write: %d, user: %d, rsvd: %d, instr_code: %d, vma->memdom_id: %d --\n", 
-			__func__, prot_code, write_code, user_code, rsvd_code, instr_code, vma->memdom_id);
-	/* Prevent recurring fault info */
+    slog(KERN_INFO "\n-- [%s] pid %d ribbon %d page fault at 0x%16lx, page_aligned_addr: 0x%16lx, vma->memdom_id: %d--\n",
+    					__func__, tsk->pid, tsk->ribbon_id, addr, page_aligned_addr, vma->memdom_id);
+    slog(KERN_INFO "-- [%s] prot: %d, write: %d, user: %d, rsvd: %d, instr_code: %d, vma->memdom_id: %d --\n",
+    		__func__, prot_code, write_code, user_code, rsvd_code, instr_code, vma->memdom_id);
+
+	/* Prevent printing recurring fault info */
 	*showed = 1;
 }
 
@@ -1226,7 +1237,6 @@ retry:
 	}
 
 	vma = find_vma(mm, address);
-	fault_info(address, vma, error_code, &showed_fault_info);	
 	if (unlikely(!vma)) {
 		bad_area(regs, error_code, address);
 		return;
@@ -1266,7 +1276,29 @@ good_area:
 
 	/* SMV related checking, terminate a process if it issus smv invalid page fault */
 	if ( !smv_valid_fault(tsk->ribbon_id, vma, error_code) ){
-		printk(KERN_ERR "[%s] --- ribbon %d issued smv invalid fault, KILL task pid %d ---\n", __func__, tsk->ribbon_id, tsk->pid);
+		int prot_code = error_code & PF_PROT;
+		int write_code = error_code & PF_WRITE;
+		int user_code = error_code & PF_USER;
+		int rsvd_code = error_code & PF_RSVD;
+		int instr_code = error_code & PF_INSTR; 
+		unsigned long page_aligned_addr = address & PAGE_MASK;
+
+		printk(KERN_ERR "[%s] --- ribbon %d issued smv invalid fault, KILL task pid %d %s---\n", 
+						 __func__, tsk->ribbon_id, tsk->pid, tsk->comm);
+		printk(KERN_ERR "[%s] pid %d ribbon %d page fault at 0x%16lx, page_aligned_addr: 0x%16lx--\n",
+		  				 __func__, tsk->pid, tsk->ribbon_id, address, page_aligned_addr);
+		printk(KERN_ERR "[%s] vma->vm_start: 0x%16lx to vma->vm_end: 0x%16lx, vma->memdom_id: %d\n",
+						 __func__, vma->vm_start, vma->vm_end, vma->memdom_id);	
+		printk(KERN_ERR "[%s] prot: %d, write: %d, user: %d, rsvd: %d, instr_code: %d\n", 
+						 __func__, prot_code, write_code, user_code, rsvd_code, instr_code);
+
+		struct vm_area_struct *walk = mm->mmap;
+		while (walk) {
+			printk(KERN_ERR "[%s] vma->vm_start: 0x%16lx to vma->vm_end: 0x%16lx, vma->memdom_id: %d\n",
+							 __func__, walk->vm_start, walk->vm_end, walk->memdom_id);	
+			walk = walk->vm_next;
+		}
+		fault_info(address, vma, error_code, &showed_fault_info);
 		bad_area_access_error(regs, error_code, address);
 		return;
 	}
