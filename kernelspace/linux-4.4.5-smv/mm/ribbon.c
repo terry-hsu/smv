@@ -45,7 +45,8 @@ int ribbon_main_init(void){
     mutex_lock(&mm->smv_metadataMutex);
     mm->pgd_ribbon[MAIN_THREAD] = mm->pgd; // record the main thread's pgd
     mm->page_table_lock_ribbon[MAIN_THREAD] = mm->page_table_lock; // record the main thread's pgtable lock
-    current->ribbon_id = MAIN_THREAD;       // main thread is using MAIN_THREAD-th ribbon_id
+    current->ribbon_id = MAIN_THREAD;       // main thread is using MAIN_THREAD-th (0) ribbon_id
+    current->mmap_memdom_id = MAIN_THREAD;  // main thread is using MAIN_THREAD-th (0) as mmap_id
 
     /* make all existing vma in memdom_id: MAIN_THREAD */
     memdom_claim_all_vmas(MAIN_THREAD);     
