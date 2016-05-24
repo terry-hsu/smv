@@ -16,7 +16,13 @@ int memdom_create(){
         return -1;
     }
     /* Allocate metadata to hold memdom info */
+#ifdef INTERCEPT_MALLOC
+#undef malloc
+#endif
     memdom[memdom_id] = (struct memdom_metadata_struct*) malloc(sizeof(struct memdom_metadata_struct));
+#ifdef INTERCEPT_MALLOC
+#define malloc(sz) memdom_alloc(memdom_private_id(), sz)
+#endif
     memdom[memdom_id]->memdom_id = memdom_id;
     memdom[memdom_id]->start = NULL; // memdom_alloc will do the actual mmap
     memdom[memdom_id]->total_size = 0;
@@ -243,7 +249,13 @@ void free_list_init(int memdom_id){
     struct free_list_struct *new_free_list;
 
     /* The first free list should be the entire mmap region */
+#ifdef INTERCEPT_MALLOC
+#undef malloc
+#endif
     new_free_list = (struct free_list_struct*) malloc (sizeof(struct free_list_struct));
+#ifdef INTERCEPT_MALLOC
+#define malloc(sz) memdom_alloc(memdom_private_id(), sz)
+#endif
     new_free_list->addr = memdom[memdom_id]->start;
     new_free_list->size = memdom[memdom_id]->total_size;   
     new_free_list->next = NULL;
@@ -270,9 +282,15 @@ void *memdom_alloc(int memdom_id, unsigned long sz){
     char *memblock = NULL;
     struct free_list_struct *free_list = NULL;
     
-    /* Memdom 0 is in global memdom, use malloc */
+    /* Memdom 0 is in global memdom, Memdom -1 when defined THREAD_PRIVATE_STACK, use malloc */
     if(memdom_id == 0){
+#ifdef INTERCEPT_MALLOC
+#undef malloc
+#endif
         memblock = (char*) malloc(sz);   
+#ifdef INTERCEPT_MALLOC
+#define malloc(sz) memdom_alloc(memdom_private_id(), sz)
+#endif
         return memblock;
     }
 
@@ -424,7 +442,13 @@ void memdom_free(void* data){
     memset(memblock, 0, header.size);
 
     /* Create a new free list node */
+#ifdef INTERCEPT_MALLOC
+#undef malloc
+#endif
     struct free_list_struct *free_list = (struct free_list_struct *) malloc(sizeof(struct free_list_struct));
+#ifdef INTERCEPT_MALLOC
+#define malloc(sz) memdom_alloc(memdom_private_id(), sz)
+#endif
     free_list->addr = memblock;
     free_list->size = header.size;
     free_list->next = NULL;
