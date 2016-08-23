@@ -6,6 +6,7 @@ import os
 import sys
 import re
 import time
+import multiprocessing
 
 all_benchmarks = ['blackscholes', 'bodytrack', 'canneal', 'dedup', 'facesim', 'ferret', 'fluidanimate', 'raytrace',  'streamcluster', 'swaptions', 'vips', 'x264']
 all_inputs = ['simsmall', 'simmedium', 'simlarge', 'native']
@@ -19,7 +20,9 @@ cores = 1
 benchmarks = []
 input_size='simlarge'
 action = 'run'
-thread = 12
+cores = []
+changedCores = 0
+origCores = multiprocessing.cpu_count()
 
 for a in sys.argv:
     if a in all_benchmarks:
@@ -32,36 +35,54 @@ for a in sys.argv:
         action = a
     elif re.match('^[0-9]+core$', a):
         if a == '1core':
-            thread = 1
+            cores.append(1)
         elif a == '2core':
-            thread = 2
+            cores.append(2)
         elif a == '4core':
-            thread = 4
+            cores.append(4)
         elif a == '8core':
-            thread = 8
+            cores.append(8)
         elif a == '12core':
-            thread = 12
+            cores.append(12)
 
 if(len(benchmarks)==0):
     benchmarks = all_benchmarks
 
+def setCPU(core):
+    changedCores = 1
+    alive_cores = multiprocessing.cpu_count()
+    cores_count = 1 # core 0 is always alive
+    for cpu in range(1, multiprocessing.cpu_count()):
+        if cpu % 2 == 0 and cores_count < cores:
+            cmd = 'sudo echo 1 > /sys/devices/system/cpu/cpu'+str(cpu)+'/online'
+            cores_count = cores_count + 1
+        else :
+            cmd = 'sudo echo 0 > /sys/devices/system/cpu/cpu'+str(cpu)+'/online'
+        os.system(cmd);
+    alive_cores = multiprocessing.cpu_count()
+    print '[smv-eval] Set CPU done, alive #cores: ' + str(alive_cores)
+
+
 def run():
     i = 1
     rv = 0
-    for bench in benchmarks:
-        while (i <= runs):
-            print "[smv-eval] Run " + str(i) + ": " + bench + " " + input_size
-            cmd = "parsecmgmt -a run -p " + bench + " -i " + input_size + " -n " + str(thread)
-            print "[smv-eval] Executing: " + cmd
-            rv = os.system(cmd)
-            if rv != 0:
-                print "[smv-eval] error, rerun"
-                print "[smv-eval] -----------------------------------"
-                continue
-            else:
-                print "[smv-eval] Run " + str(i) + " done."
-                print "[smv-eval] -----------------------------------"
-            i = i + 1
+    for core in cores :
+        if core != multiprocessing.cpu_count():
+            setCPU(core)
+        for bench in benchmarks:
+            while (i <= runs):
+                print "[smv-eval] Run " + str(i) + ": " + bench + " " + input_size
+                cmd = "parsecmgmt -a run -p " + bench + " -i " + input_size + " -n " + str(core)
+                print "[smv-eval] Executing: " + cmd
+                rv = os.system(cmd)
+                if rv != 0:
+                    print "[smv-eval] error, rerun"
+                    print "[smv-eval] -----------------------------------"
+                    continue
+                else:
+                    print "[smv-eval] Run " + str(i) + " done."
+                    print "[smv-eval] -----------------------------------"
+                i = i + 1
 
 def build():
     rv = 0
@@ -98,6 +119,10 @@ def main():
     elif action == 'uninstall':
         uninstall()
     elapsed_time = time.time() - start_time
+
+    # resotre CPU cores
+    if changedCores:
+        setCPU(origCores)
     print "[smv-eval] Finished, time: " + str(elapsed_time) + " seconds."
 
 # call main function
