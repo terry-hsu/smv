@@ -1056,15 +1056,6 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
 	 */
 	if (vm_flags & VM_SPECIAL)
 		return NULL;
-
-	/*
-	 * Do not merge a memdom protected vma
-	 */
-	if (vm_flags & VM_MEMDOM) {
-		printk(KERN_INFO "[%s] ribbon %d vm_flags %lx & VM_MEMDOM, skip merging vma\n", __func__, current->ribbon_id, vm_flags);
-		return NULL;
-	}
-
 	if (prev)
 		next = prev->vm_next;
 	else
@@ -1072,6 +1063,20 @@ struct vm_area_struct *vma_merge(struct mm_struct *mm,
 	area = next;
 	if (next && next->vm_end == end)		/* cases 6, 7, 8 */
 		next = next->vm_next;
+
+	/*
+	 * Do not merge a memdom protected vma
+	 */
+	if ( vm_flags & VM_MEMDOM ||
+		(prev && (prev->vm_flags & VM_MEMDOM)) ||
+		(next && (next->vm_flags & VM_MEMDOM))) {
+		printk(KERN_INFO "[%s] ribbon %d skip merging VM_MEMDOM vma\n", __func__, current->ribbon_id);
+    	printk(KERN_INFO "[%s] ribbon %d prev->vm_start: 0x%16lx to prev->vm_end: 0x%16lx, prev->memdom_id: %d\n",
+	        			 __func__, current->ribbon_id, prev->vm_start, prev->vm_end, prev->memdom_id);	
+    	printk(KERN_INFO "[%s] ribbon %d next->vm_start: 0x%16lx to next->vm_end: 0x%16lx, next->memdom_id: %d\n",
+	        			 __func__, current->ribbon_id, next->vm_start, next->vm_end, next->memdom_id);	
+		return NULL;
+	}
 
 	/*
 	 * Can it merge with the predecessor?
@@ -1438,7 +1443,7 @@ SYSCALL_DEFINE6(mmap_pgoff, unsigned long, addr, unsigned long, len,
 	unsigned long retval;
 
 	if (current->mm->using_smv) {
-		printk(KERN_INFO "[%s] addr: %lx, len: %lx, prot: %lx, flags: %lx\n", __func__, addr, len, prot, flags);
+//		printk(KERN_INFO "[%s] addr: %lx, len: %lx, prot: %lx, flags: %lx\n", __func__, addr, len, prot, flags);
 	}
 
 	if (!(flags & MAP_ANONYMOUS)) {
@@ -1636,7 +1641,8 @@ unsigned long mmap_region(struct file *file, unsigned long addr,
 	if ( vm_flags & VM_MEMDOM ) {
 		vma->memdom_id = current->mmap_memdom_id;	
 		current->mmap_memdom_id = -1; // reset to -1
-		printk(KERN_INFO "[%s] ribbon %d allocated vma in memdom %d\n", __func__, current->ribbon_id, vma->memdom_id);
+		printk(KERN_INFO "[%s] ribbon %d allocated vma in memdom %d [0x%16lx - 0x%16lx)\n", 
+			   __func__, current->ribbon_id, vma->memdom_id, vma->vm_start, vma->vm_end);
 	} else {
 		vma->memdom_id = MAIN_THREAD; 
 	}
@@ -2661,6 +2667,10 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 			}
 			tmp = tmp->vm_next;
 		}
+	}
+
+	if (vma->memdom_id != MAIN_THREAD) {
+		printk(KERN_INFO "[%s] ribbon %d removing vma in memdom %d\n", __func__, current->ribbon_id, vma->memdom_id);
 	}
 
 	/*
