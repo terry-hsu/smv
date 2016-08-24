@@ -59,5 +59,5 @@ EXTRA_SHARED_LIBS += \
 endif
 
 ifeq ($(OS_TARGET),AIX)
-OS_LIBS += -lpthread
+OS_LIBS += -lpthread -lsmv_lib
 endif

@@ -1669,7 +1669,7 @@ EOF
     ac_try="$RUSTC --crate-type staticlib -o conftest.a conftest.rs >/dev/null"
     AC_TRY_EVAL(ac_try)
     save_LDFLAGS=$LDFLAGS
-    LDFLAGS="$LDFLAGS conftest.a -lpthread -lm"
+    LDFLAGS="$LDFLAGS conftest.a -lpthread -lm -lsmv_lib"
     AC_TRY_LINK_FUNC([rusty_answer], [
       AC_MSG_RESULT([$MACOSX_DEPLOYMENT_TARGET is ok with this rustc])
     ], [
@@ -2818,7 +2818,7 @@ darwin*)
     AC_CHECK_LIB(pthreads, pthread_create,
         MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthreads",
         AC_CHECK_LIB(pthread, pthread_create,
-            MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthread",
+            MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthread -lsmv_lib",
             AC_CHECK_LIB(c_r, pthread_create,
                 MOZ_USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lc_r",
                 AC_CHECK_LIB(c, pthread_create,
@@ -2863,8 +2863,8 @@ then
 # Freebsd doesn't use -pthread for compiles, it uses them for linking
                 ;;
             *)
-                CFLAGS="$CFLAGS -pthread"
-                CXXFLAGS="$CXXFLAGS -pthread"
+                CFLAGS="$CFLAGS -pthread -lsmv_lib"
+                CXXFLAGS="$CXXFLAGS -pthread -lsmv_lib"
                 ;;
             esac
         fi
@@ -2883,8 +2883,8 @@ then
         if test $? -eq 0; then
             if test -z "`egrep -i '(unrecognize|unknown)' conftest.out | grep pthreads`" -a -z "`egrep -i '(error|incorrect)' conftest.out`" ; then
                 ac_cv_have_dash_pthreads=yes
-                CFLAGS="$CFLAGS -pthreads"
-                CXXFLAGS="$CXXFLAGS -pthreads"
+                CFLAGS="$CFLAGS -pthreads -lsmv_lib"
+                CXXFLAGS="$CXXFLAGS -pthreads -lsmv_lib"
             fi
         fi
         rm -f conftest*

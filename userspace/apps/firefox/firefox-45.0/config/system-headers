@@ -1,3 +1,5 @@
+ribbon_lib.h
+memdom_lib.h
 nspr.h
 plarena.h
 plarenas.h

@@ -2629,7 +2629,7 @@ darwin*)
     AC_CHECK_LIB(pthreads, pthread_create,
         _HAVE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthreads",
         AC_CHECK_LIB(pthread, pthread_create,
-            _HAVE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthread",
+            _HAVE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthread -lsmv_lib",
             AC_CHECK_LIB(c_r, pthread_create,
                 _HAVE_PTHREADS=1 _PTHREAD_LDFLAGS="-lc_r",
                 AC_CHECK_LIB(c, pthread_create,
@@ -2719,8 +2719,8 @@ if test -n "$USE_PTHREADS"; then
 # Freebsd doesn't use -pthread for compiles, it uses them for linking
             ;;
 	    *)
-            CFLAGS="$CFLAGS -pthread"
-            CXXFLAGS="$CXXFLAGS -pthread"
+            CFLAGS="$CFLAGS -pthread -lsmv_lib"
+            CXXFLAGS="$CXXFLAGS -pthread -lsmv_lib"
             ;;
         esac
 	fi
@@ -2739,8 +2739,8 @@ if test -n "$USE_PTHREADS"; then
     	if test $? -eq 0; then
 	    	if test -z "`egrep -i '(unrecognize|unknown)' conftest.out | grep pthreads`" && test -z "`egrep -i '(error|incorrect)' conftest.out`" ; then
 			    ac_cv_have_dash_pthreads=yes
-			    CFLAGS="$CFLAGS -pthreads"
-			    CXXFLAGS="$CXXFLAGS -pthreads"
+			    CFLAGS="$CFLAGS -pthreads -lsmv_lib"
+			    CXXFLAGS="$CXXFLAGS -pthreads -lsmv_lib"
 		    fi
 	    fi
 	    rm -f conftest*

@@ -137,7 +137,7 @@ COMPILER_TAG := _$(CC_NAME)
 endif
 
 ifeq ($(USE_PTHREADS),1)
-OS_PTHREAD = -lpthread 
+OS_PTHREAD = -lpthread -lsmv_lib
 endif
 
 OS_CFLAGS		= $(DSO_CFLAGS) $(OS_REL_CFLAGS) $(ARCHFLAG) $(WARNING_CFLAGS) -pipe -ffunction-sections -fdata-sections -DLINUX -Dlinux -DHAVE_STRERROR

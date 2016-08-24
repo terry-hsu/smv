@@ -1,3 +1,5 @@
+ribbon_lib.h
+memdom_lib.h
 Aliases.h
 arpa/inet.h
 assert.h

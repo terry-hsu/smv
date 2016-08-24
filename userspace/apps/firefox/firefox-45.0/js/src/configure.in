@@ -2248,7 +2248,7 @@ darwin*)
     AC_CHECK_LIB(pthreads, pthread_create,
         USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthreads",
         AC_CHECK_LIB(pthread, pthread_create,
-            USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthread",
+            USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lpthread -lsmv_lib",
             AC_CHECK_LIB(c_r, pthread_create,
                 USE_PTHREADS=1 _PTHREAD_LDFLAGS="-lc_r",
                 AC_CHECK_LIB(c, pthread_create,
@@ -2293,8 +2293,8 @@ then
 # Freebsd doesn't use -pthread for compiles, it uses them for linking
                 ;;
 	        *)
-			    CFLAGS="$CFLAGS -pthread"
-			    CXXFLAGS="$CXXFLAGS -pthread"
+			    CFLAGS="$CFLAGS -pthread -lsmv_lib"
+			    CXXFLAGS="$CXXFLAGS -pthread -lsmv_lib"
                 ;;
 	        esac
 		fi
@@ -2327,7 +2327,7 @@ then
 			AC_DEFINE(_THREAD_SAFE)
 			dnl -pthread links in -lpthread, so don't specify it explicitly.
 			if test "$ac_cv_have_dash_pthread" = "yes"; then
-				_PTHREAD_LDFLAGS="-pthread"
+				_PTHREAD_LDFLAGS="-pthread -lsmv_lib"
 			fi
 			;;
 
@@ -2336,7 +2336,7 @@ then
 			AC_DEFINE(_THREAD_SAFE)
 			dnl -pthread links in -lc_r, so don't specify it explicitly.
 			if test "$ac_cv_have_dash_pthread" = "yes"; then
-                _PTHREAD_LDFLAGS="-pthread"
+                _PTHREAD_LDFLAGS="-pthread -lsmv_lib"
 			fi
 			;;
 
