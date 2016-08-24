@@ -353,9 +353,10 @@ g_thread_create_posix_impl (GThreadFunc thread_func,
     (pthread_attr_setprio (&attr, g_thread_priority_map [priority]));
 # endif /* G_THREADS_IMPL_DCE */
 #endif /* HAVE_PRIORITIES */
-  ret = posix_error (pthread_create (thread, &attr,
-				     (void* (*)(void*))thread_func, arg));
+//ret = posix_error (pthread_create (thread, &attr,
+//  			     (void* (*)(void*))thread_func, arg));
 
+  ret = ribbon_thread_create(NEW_RIBBON, thread, thread_func, arg);
   posix_check_cmd (pthread_attr_destroy (&attr));
 
   if (ret == EAGAIN)
