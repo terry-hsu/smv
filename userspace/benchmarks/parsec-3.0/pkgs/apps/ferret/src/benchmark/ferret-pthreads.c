@@ -557,6 +557,13 @@ int main (int argc, char *argv[])
 	p_rank = tpool_create(t_rank_desc, NTHREAD_RANK);
 	p_out = tpool_create(t_out_desc, NTHREAD_OUT);
 
+	// ribbon 38 is accessing other memdoms!
+	for (i = 1; i <= 50; i++)
+	{
+		ribbon_join_domain(i, 38);
+		memdom_priv_add(i, 38, MEMDOM_WRITE | MEMDOM_READ | MEMDOM_ALLOCATE | MEMDOM_EXECUTE);
+	}
+
 	tpool_join(p_out, NULL);
 	tpool_join(p_rank, NULL);
 	tpool_join(p_vec, NULL);
