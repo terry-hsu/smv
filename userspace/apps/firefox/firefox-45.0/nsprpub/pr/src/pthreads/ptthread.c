@@ -20,7 +20,7 @@
 #include <string.h>
 #include <signal.h>
 #include <dlfcn.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 #if defined(OPENBSD) || defined(FREEBSD) || defined(DRAGONFLY)
 #include <pthread_np.h>
@@ -455,11 +455,11 @@ static PRThread* _PR_CreateThread(
          * to pthread_create() because who knows what wacky things
          * pthread_create() may be doing to its argument.
          */
-        if (type == PR_RIBBON_THREAD) {
-            int ribbon_id = ribbon_create();
+        if (type == PR_SMV_THREAD) {
+            int smv_id = smv_create();
             pthread_t tid;
-            rv = smvthread_create(ribbon_id, &tid, _pt_root, thred);
-            if (rv == ribbon_id) {
+            rv = smvthread_create(smv_id, &tid, _pt_root, thred);
+            if (rv == smv_id) {
                 rv = 0;
             }
         }

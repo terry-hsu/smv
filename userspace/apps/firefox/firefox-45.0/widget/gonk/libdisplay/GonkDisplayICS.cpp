@@ -22,7 +22,7 @@
 #include <hardware_legacy/power.h>
 #include <cutils/log.h>
 #include <fcntl.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include "mozilla/Assertions.h"
 #include "mozilla/FileUtils.h"
 #include "mozilla/FileUtils.h"

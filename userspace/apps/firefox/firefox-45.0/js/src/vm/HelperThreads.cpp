@@ -24,7 +24,7 @@
 #include "jsobjinlines.h"
 #include "jsscriptinlines.h"
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 
 using namespace js;
@@ -500,7 +500,7 @@ GlobalHelperThreadState::ensureInitialized()
         HelperThread& helper = threads[i];
         helper.threadData.emplace(static_cast<JSRuntime*>(nullptr));
 
-        helper.thread = PR_CreateThread(PR_RIBBON_THREAD, HelperThread::ThreadMain, &helper,
+        helper.thread = PR_CreateThread(PR_SMV_THREAD, HelperThread::ThreadMain, &helper,
                                         PR_PRIORITY_NORMAL, PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, HELPER_STACK_SIZE);
         if (!helper.thread || !helper.threadData->init()) {
             finishThreads();

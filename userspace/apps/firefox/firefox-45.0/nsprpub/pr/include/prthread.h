@@ -53,7 +53,7 @@ typedef struct PRThreadStack PRThreadStack;
 
 typedef enum PRThreadType {
     PR_USER_THREAD,
-    PR_RIBBON_THREAD,
+    PR_SMV_THREAD,
     PR_SYSTEM_THREAD
 } PRThreadType;
 
