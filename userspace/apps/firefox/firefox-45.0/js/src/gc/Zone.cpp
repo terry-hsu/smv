@@ -50,7 +50,7 @@ JS::Zone::Zone(JSRuntime* rt)
 
     AutoLockGC lock(rt);
     threshold.updateAfterGC(8192, GC_NORMAL, rt->gc.tunables, rt->gc.schedulingState, lock);
-    setGCMaxMallocBytes(rt->gc.maxMallocBytesAllocated() * 0.9);
+    setGCMaxMallocBytes(rt->gc.maxMallocBytesAllocated() * 0.9);  
 }
 
 Zone::~Zone()

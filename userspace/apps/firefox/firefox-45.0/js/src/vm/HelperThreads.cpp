@@ -25,6 +25,7 @@
 #include "jsscriptinlines.h"
 
 #include <ribbon_lib.h>
+#include <memdom_lib.h>
 
 using namespace js;
 
@@ -494,7 +495,7 @@ GlobalHelperThreadState::ensureInitialized()
     threads = js_pod_calloc<HelperThread>(threadCount);
     if (!threads)
         return false;
-
+    printf("[%s] creating %d threads\n", __func__, threadCount);
     for (size_t i = 0; i < threadCount; i++) {
         HelperThread& helper = threads[i];
         helper.threadData.emplace(static_cast<JSRuntime*>(nullptr));
@@ -1228,6 +1229,7 @@ HelperThread::handleWasmWorkload()
     bool success = false;
 
     wasm::CompileTask* task = wasmTask();
+//  printf("[%s] task %p in memdom: %d\n", __func__, task, memdom_query_id(task));
     {
         AutoUnlockHelperThreadState unlock;
         PerThreadData::AutoEnterRuntime enter(threadData.ptr(), task->args().runtime);
@@ -1388,7 +1390,8 @@ HelperThread::handleParseWorkload()
     currentTask.emplace(HelperThreadState().parseWorklist().popCopy());
     ParseTask* task = parseTask();
     task->cx->setHelperThread(this);
-
+//  printf("[%s] task %p in memdom: %d\n", __func__, task, memdom_query_id(task));
+        
     {
         AutoUnlockHelperThreadState unlock;
         PerThreadData::AutoEnterRuntime enter(threadData.ptr(),
@@ -1440,6 +1443,7 @@ HelperThread::handleCompressionWorkload()
 
     currentTask.emplace(HelperThreadState().compressionWorklist().popCopy());
     SourceCompressionTask* task = compressionTask();
+//  printf("[%s] task %p in memdom: %d\n", __func__, task, memdom_query_id(task));
     task->helperThread = this;
 
     {
@@ -1458,7 +1462,9 @@ bool
 js::StartOffThreadCompression(ExclusiveContext* cx, SourceCompressionTask* task)
 {
     AutoLockHelperThreadState lock;
-
+//  if ( memdom_query_id(task) != 0 ) {
+//      printf("[%s] adding Compression task: %p (in memdom %d)\n", __func__, task, memdom_query_id(task));
+//  }
     if (!HelperThreadState().compressionWorklist().append(task)) {
         if (JSContext* maybecx = cx->maybeJSContext())
             ReportOutOfMemory(maybecx);
@@ -1546,7 +1552,7 @@ HelperThread::handleGCHelperWorkload()
 
     currentTask.emplace(HelperThreadState().gcHelperWorklist().popCopy());
     GCHelperState* task = gcHelperTask();
-
+//  printf("[%s] task %p in memdom: %d\n", __func__, task, memdom_query_id(task));
     {
         AutoUnlockHelperThreadState unlock;
         task->work();

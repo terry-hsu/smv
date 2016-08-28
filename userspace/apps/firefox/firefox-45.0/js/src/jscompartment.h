@@ -20,6 +20,9 @@
 #include "vm/SavedStacks.h"
 #include "vm/Time.h"
 
+//#include <ribbon_lib.h>   //compile error, find out how to link library correctly for this
+//#include <memdom_lib.h>
+
 namespace js {
 
 namespace jit {

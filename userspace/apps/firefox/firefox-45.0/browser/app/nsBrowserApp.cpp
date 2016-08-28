@@ -17,8 +17,6 @@
 #include <unistd.h>
 #endif
 
-#include <ribbon_lib.h>
-
 #ifdef XP_MACOSX
 #include "MacQuirks.h"
 #endif
@@ -50,6 +48,8 @@
 
 #include "mozilla/Telemetry.h"
 #include "mozilla/WindowsDllBlocklist.h"
+
+#include <ribbon_lib.h>
 
 using namespace mozilla;
 
