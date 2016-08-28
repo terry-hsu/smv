@@ -1,6 +1,6 @@
 #include <cstring>
 #include <cerrno>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include "RTTL/common/RTThread.hxx"
 
 /// This class extends MultiThreadedSyncPrimitive by including m_suspended member.

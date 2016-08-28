@@ -64,7 +64,7 @@
 #define std
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 /*
  #
  # Set CImg configuration flags.

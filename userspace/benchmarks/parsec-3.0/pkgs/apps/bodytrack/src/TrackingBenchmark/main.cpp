@@ -31,7 +31,7 @@
 #include <sstream>
 #include <fstream>
 #include <iomanip>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 //Add defines USE_OPENMP, USE_THREADS or USE_TBB for threaded versions if not using config file (Windows).
 //#define USE_OPENMP
@@ -372,7 +372,7 @@ int main(int argc, char **argv)
 	bool OutputBMP;
 	int cameras, frames, particles, layers, threads, threadModel;								//process command line parameters to get path, cameras, and frames
 
-    ribbon_main_init(1);
+    smv_main_init(1);
 
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x

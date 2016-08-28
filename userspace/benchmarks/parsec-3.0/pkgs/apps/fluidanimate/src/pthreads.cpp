@@ -29,7 +29,7 @@
 #include <hooks.h>
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 //Uncomment to add code to check that Courant–Friedrichs–Lewy condition is satisfied at runtime
 //#define ENABLE_CFL_CHECK
@@ -1200,7 +1200,7 @@ void AdvanceFrameVisualization()
 
 int main(int argc, char *argv[])
 {
-  ribbon_main_init(1);
+  smv_main_init(1);
 
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x

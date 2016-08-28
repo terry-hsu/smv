@@ -11,7 +11,7 @@
 #include <pthread.h>
 #endif //ENABLE_PTHREADS
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 #include "../Data_Structures/QUEUE.h"
 #include "../Data_Structures/PAIR.h"

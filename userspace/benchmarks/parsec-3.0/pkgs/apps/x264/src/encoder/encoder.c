@@ -36,7 +36,7 @@
 #include "common/visualize.h"
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 //#define DEBUG_MB_TYPE
 

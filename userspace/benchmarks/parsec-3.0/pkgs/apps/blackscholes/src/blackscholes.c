@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 
 #ifdef ENABLE_PARSEC_HOOKS
@@ -290,7 +290,7 @@ int main (int argc, char **argv)
     int * buffer2;
     int rv;
 
-    ribbon_main_init(1);
+    smv_main_init(1);
 
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x

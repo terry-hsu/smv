@@ -22,7 +22,7 @@
 #include <pthread.h>
 #include <errno.h>
 #include <assert.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include "parsec_barrier.hpp"
 
 

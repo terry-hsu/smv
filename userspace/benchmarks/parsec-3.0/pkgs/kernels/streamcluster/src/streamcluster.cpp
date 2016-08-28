@@ -15,7 +15,7 @@
 #include <math.h>
 #include <sys/resource.h>
 #include <limits.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 
 #ifdef ENABLE_THREADS
@@ -1966,7 +1966,7 @@ int main(int argc, char **argv)
   long kmin, kmax, n, chunksize, clustersize;
   int dim;
 
-	ribbon_main_init(1);
+	smv_main_init(1);
 
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x

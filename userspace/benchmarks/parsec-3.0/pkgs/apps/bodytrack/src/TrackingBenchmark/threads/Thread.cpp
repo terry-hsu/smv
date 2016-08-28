@@ -19,7 +19,7 @@
 
 #include <typeinfo>
 #include "Thread.h"
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 namespace threads {
 

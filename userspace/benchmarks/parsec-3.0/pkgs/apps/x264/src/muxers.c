@@ -41,7 +41,7 @@
 #include <gpac/isomedia.h>
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 static int64_t gcd( int64_t a, int64_t b )
 {

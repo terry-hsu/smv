@@ -41,7 +41,7 @@
 #include "tree.h"
 #endif //ENABLE_PTHREADS
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 
 #ifdef ENABLE_GZIP_COMPRESSION

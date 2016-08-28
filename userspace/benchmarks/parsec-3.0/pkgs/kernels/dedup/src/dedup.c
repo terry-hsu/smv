@@ -21,7 +21,7 @@
 #include <hooks.h>
 #endif //ENABLE_PARSEC_HOOKS
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 
 config_t * conf;
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
   int32 compress = TRUE;
 
-  ribbon_main_init(1);
+  smv_main_init(1);
   //We force the sha1 sum to be integer-aligned, check that the length of a sha1 sum is a multiple of unsigned int
   assert(SHA1_LEN % sizeof(unsigned int) == 0);
 

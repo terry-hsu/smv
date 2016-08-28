@@ -17,7 +17,7 @@ pthread_mutexattr_t _M4_normalMutexAttr;
 #include "taskQInternal.h"
 #include "taskQList.h"
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 static volatile long          numThreads, numTaskQs, threadsPerTaskQ, maxTasks;
 static volatile int           nextQ = 0;  // Just a hint. Not protected by locks.

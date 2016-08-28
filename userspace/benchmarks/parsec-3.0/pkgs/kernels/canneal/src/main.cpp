@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <vector>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 
 #ifdef ENABLE_THREADS
@@ -66,7 +66,7 @@ int main (int argc, char * const argv[]) {
 #ifdef ENABLE_PARSEC_HOOKS
 	__parsec_bench_begin(__parsec_canneal);
 #endif
-	ribbon_main_init(1);
+	smv_main_init(1);
 
 	srandom(3);
 

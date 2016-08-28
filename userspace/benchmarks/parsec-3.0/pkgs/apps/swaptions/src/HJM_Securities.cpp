@@ -34,7 +34,7 @@ tbb::cache_aligned_allocator<parm> memory_parm;
 #include <hooks.h>
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 int NUM_TRIALS = DEFAULT_NUM_TRIALS;
 int nThreads = 1;
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
 	int iSuccess = 0;
 	int i,j;
 	
-    ribbon_main_init(1);
+    smv_main_init(1);
 
 	FTYPE **factors=NULL;
 

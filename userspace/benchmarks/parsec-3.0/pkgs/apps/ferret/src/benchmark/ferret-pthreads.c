@@ -32,7 +32,7 @@ Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 #include <../image/image.h>
 #include "tpool.h"
 #include "queue.h"
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 #ifdef ENABLE_PARSEC_HOOKS
 #include <hooks.h>
@@ -429,7 +429,7 @@ int main (int argc, char *argv[])
 
 	int ret, i;
 
-	ribbon_main_init(1);
+	smv_main_init(1);
 
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
@@ -557,10 +557,10 @@ int main (int argc, char *argv[])
 	p_rank = tpool_create(t_rank_desc, NTHREAD_RANK);
 	p_out = tpool_create(t_out_desc, NTHREAD_OUT);
 
-	// ribbon 38 is accessing other memdoms!
+	// smv 38 is accessing other memdoms!
 	for (i = 1; i <= 50; i++)
 	{
-		ribbon_join_domain(i, 38);
+		smv_join_domain(i, 38);
 		memdom_priv_add(i, 38, MEMDOM_WRITE | MEMDOM_READ | MEMDOM_ALLOCATE | MEMDOM_EXECUTE);
 	}
 

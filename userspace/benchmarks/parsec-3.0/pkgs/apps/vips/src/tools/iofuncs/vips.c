@@ -78,7 +78,7 @@
 #include <locale.h>
 
 #include <vips/vips.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #ifdef OS_WIN32
 #define strcasecmp(a,b) _stricmp(a,b)
 #endif
@@ -901,7 +901,7 @@ main( int argc, char **argv )
 	im_function *fn;
 	int i, j;
 
-    ribbon_main_init(1);
+    smv_main_init(1);
 	if( im_init_world( argv[0] ) )
 	        error_exit( NULL );
 	textdomain( GETTEXT_PACKAGE );

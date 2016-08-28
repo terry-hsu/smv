@@ -47,7 +47,7 @@
 #include <sched.h>
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #define posix_check_err(err, name) G_STMT_START{			\
   int error = (err); 							\
   if (error)	 		 		 			\

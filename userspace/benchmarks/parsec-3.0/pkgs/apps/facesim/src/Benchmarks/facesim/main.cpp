@@ -14,7 +14,7 @@
 #include <hooks.h>
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 using namespace PhysBAM;
 
@@ -28,7 +28,7 @@ bool PHYSBAM_THREADED_RUN = false;
 
 int main (int argc, char* argv[])
 {
-    ribbon_main_init(1);
+    smv_main_init(1);
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
 #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)

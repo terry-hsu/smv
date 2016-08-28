@@ -47,7 +47,7 @@
 #include <hooks.h>
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 uint8_t *mux_buffer = NULL;
 int mux_buffer_size = 0;
@@ -97,7 +97,7 @@ int main( int argc, char **argv )
     cli_opt_t opt;
     int ret;
 
-    ribbon_main_init(1);
+    smv_main_init(1);
 #ifdef PARSEC_VERSION
 #define __PARSEC_STRING(x) #x
 #define __PARSEC_XSTRING(x) __PARSEC_STRING(x)
