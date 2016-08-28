@@ -55,7 +55,7 @@ int main(){
     pthread_create(&tid[0], NULL, fn_2, NULL);
     
     ribbon_id = ribbon_create();
-    ribbon_thread_create(ribbon_id, &tid[1], fn_1, NULL);
+    smvthread_create(ribbon_id, &tid[1], fn_1, NULL);
 
     // wait for child threads
     pthread_join(tid[0], NULL);

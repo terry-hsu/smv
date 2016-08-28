@@ -73,9 +73,9 @@ int main(){
     for (i = 0; i < NUM_THREADS; i++) {
         t[i] = malloc(sizeof(int));
         *t[i] = i;
-        rv = ribbon_thread_create(ribbon_id[i], &tid[i], fn, t[i]);
+        rv = smvthread_create(ribbon_id[i], &tid[i], fn, t[i]);
         if (rv == -1) {
-            printf("ribbon_thread_create error\n");
+            printf("smvthread_create error\n");
         }
     }
 

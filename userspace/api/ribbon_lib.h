@@ -24,7 +24,7 @@
 
 #define INTERCEPT_PTHREAD_CREATE
 #ifdef INTERCEPT_PTHREAD_CREATE
-#define pthread_create(tid, attr, fn, args) ribbon_thread_create(NEW_RIBBON, tid, fn, args)
+#define pthread_create(tid, attr, fn, args) smvthread_create(NEW_RIBBON, tid, fn, args)
 #endif
 
 extern int ALLOW_GLOBAL; // 1: all threads can access global memdom, 0 otherwise
@@ -52,7 +52,7 @@ int ribbon_leave_domain(int memdom_id, int ribbon_id);
 int ribbon_is_in_domain(int memdom_id, int ribbon_id);
 
 /* Create an smv thread running in a ribbon */
-int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args);
+int smvthread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args);
 
 /* Check whether a ribbon exists */
 int ribbon_exists(int ribbon_id);

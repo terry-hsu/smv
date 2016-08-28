@@ -44,9 +44,9 @@ int main(){
     }
 
     for (i = 0; i < NUM_THREADS; i++) {
-        rv = ribbon_thread_create(ribbon_id[i], &tid[i], fn, NULL);
+        rv = smvthread_create(ribbon_id[i], &tid[i], fn, NULL);
         if (rv == -1) {
-            printf("ribbon_thread_create error\n");
+            printf("smvthread_create error\n");
         }
     }
 

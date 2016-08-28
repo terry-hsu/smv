@@ -458,7 +458,7 @@ static PRThread* _PR_CreateThread(
         if (type == PR_RIBBON_THREAD) {
             int ribbon_id = ribbon_create();
             pthread_t tid;
-            rv = ribbon_thread_create(ribbon_id, &tid, _pt_root, thred);
+            rv = smvthread_create(ribbon_id, &tid, _pt_root, thred);
             if (rv == ribbon_id) {
                 rv = 0;
             }

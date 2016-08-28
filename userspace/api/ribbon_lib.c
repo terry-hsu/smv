@@ -121,14 +121,14 @@ int ribbon_exists(int ribbon_id) {
 }
 
 /* Create an smv thread running in a ribbon.
- * When caller specify ribbon_id = -1, ribbon_thread_create automatically creates a new ribbon 
+ * When caller specify ribbon_id = -1, smvthread_create automatically creates a new ribbon 
  * for the about-to-run thread to running in.  Without non-zero ribbon, the function first check
  * if the ribbon_id exists in the system,  then proceed to create the thread to run in the given
  * ribbon id.
  * Return the ribbon_id the new thread is running in. On error, return -1.
  * If defined as pthread_create, we should return 0 but not the ribbon id.
  */
-int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args){
+int smvthread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args){
 	int rv = 0;
 	char buf[100];
 	int memdom_id;
@@ -136,7 +136,7 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 	void *stack_base;
 	unsigned long stack_size;
 
-	/* When caller specify ribbon_id = -1, ribbon_thread_create automatically creates a new ribbon 
+	/* When caller specify ribbon_id = -1, smvthread_create automatically creates a new ribbon 
 	 * for the about-to-run thread to running in. 
 	 */
 	if (ribbon_id == NEW_RIBBON) {
@@ -222,8 +222,8 @@ int ribbon_thread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void 
 #ifdef INTERCEPT_PTHREAD_CREATE
 	/* Set return value to 0 to avoid pthread_create error */
 	ribbon_id = 0;
-	/* ReDefine pthread_create to be ribbon_thread_create again */
-#define pthread_create(tid, attr, fn, args) ribbon_thread_create(NEW_RIBBON, tid, fn, args)
+	/* ReDefine pthread_create to be smvthread_create again */
+#define pthread_create(tid, attr, fn, args) smvthread_create(NEW_RIBBON, tid, fn, args)
 #endif
 
 #ifdef THREAD_PRIVATE_STACK
