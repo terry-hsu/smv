@@ -30,6 +30,8 @@ int main(){
     int memdom_id[NUM_MEMDOMS_PER_THREAD];
     pthread_t tid[NUM_THREADS];
 
+    smv_main_init(1);
+
     for (i = 0; i < NUM_THREADS; i++) {
         pthread_create(&tid[i], NULL, fn, NULL);
     }
