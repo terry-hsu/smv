@@ -1,5 +1,5 @@
-#ifndef RIBBON_LIB_H
-#define RIBBON_LIB_H
+#ifndef SMV_LIB_H
+#define SMV_LIB_H
 
 #include <stdlib.h>
 #include <stdio.h>
