@@ -139,7 +139,7 @@ int smvthread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *arg
 	/* When caller specify ribbon_id = -1, smvthread_create automatically creates a new ribbon 
 	 * for the about-to-run thread to running in. 
 	 */
-	if (ribbon_id == NEW_RIBBON) {
+	if (ribbon_id == NEW_SMV) {
 		ribbon_id = ribbon_create();
 		fprintf(stderr, "creating a new ribbon %d for the new thread to run in\n", ribbon_id);
 	}
@@ -223,7 +223,7 @@ int smvthread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *arg
 	/* Set return value to 0 to avoid pthread_create error */
 	ribbon_id = 0;
 	/* ReDefine pthread_create to be smvthread_create again */
-#define pthread_create(tid, attr, fn, args) smvthread_create(NEW_RIBBON, tid, fn, args)
+#define pthread_create(tid, attr, fn, args) smvthread_create(NEW_SMV, tid, fn, args)
 #endif
 
 #ifdef THREAD_PRIVATE_STACK

@@ -20,11 +20,11 @@
 }
 
 //#define THREAD_PRIVATE_STACK
-#define NEW_RIBBON -1
+#define NEW_SMV -1
 
 #define INTERCEPT_PTHREAD_CREATE
 #ifdef INTERCEPT_PTHREAD_CREATE
-#define pthread_create(tid, attr, fn, args) smvthread_create(NEW_RIBBON, tid, fn, args)
+#define pthread_create(tid, attr, fn, args) smvthread_create(NEW_SMV, tid, fn, args)
 #endif
 
 extern int ALLOW_GLOBAL; // 1: all threads can access global memdom, 0 otherwise

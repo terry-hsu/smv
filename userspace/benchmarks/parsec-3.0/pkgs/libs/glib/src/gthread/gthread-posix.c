@@ -356,7 +356,7 @@ g_thread_create_posix_impl (GThreadFunc thread_func,
 //ret = posix_error (pthread_create (thread, &attr,
 //  			     (void* (*)(void*))thread_func, arg));
 
-  ret = smvthread_create(NEW_RIBBON, thread, thread_func, arg);
+  ret = smvthread_create(NEW_SMV, thread, thread_func, arg);
   posix_check_cmd (pthread_attr_destroy (&attr));
 
   if (ret == EAGAIN)
