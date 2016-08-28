@@ -6,13 +6,13 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 int global_int;
 pthread_mutex_t lock;
 pthread_cond_t cond;
 
-// Thread stack for creating ribbons
+// Thread stack for creating smvs
 void *fn_1(void *args){
     pthread_mutex_lock(&lock);
     while(global_int != 999)
@@ -35,10 +35,10 @@ void *fn_2(void *args){
 }
 
 int main(){
-    int ribbon_id;
+    int smv_id;
     pthread_t tid[2];
     global_int = 0;
-    ribbon_main_init(1);
+    smv_main_init(1);
 
     /* Mutex init */
     pthread_mutexattr_t attr;
@@ -54,8 +54,8 @@ int main(){
 
     pthread_create(&tid[0], NULL, fn_2, NULL);
     
-    ribbon_id = ribbon_create();
-    smvthread_create(ribbon_id, &tid[1], fn_1, NULL);
+    smv_id = smv_create();
+    smvthread_create(smv_id, &tid[1], fn_1, NULL);
 
     // wait for child threads
     pthread_join(tid[0], NULL);

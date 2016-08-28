@@ -2,13 +2,13 @@ GCC = gcc
 CFLAGS = -g -Wall 
 LIBS = -lsmv_lib -lpthread
 
-all: tc_ribbon_create tc_memdom_create \
+all: tc_smv_create tc_memdom_create \
 	 privs_t1 tc_smvthread_create \
 	 tc_shared_mm tc_memdom_alloc \
 	 tc_mutex tc_cond_var 
 
 
-tc_ribbon_create:
+tc_smv_create:
 	$(GCC) $(CFLAGS) $@.c -o $@.o $(LIBS)
 
 tc_memdom_create:

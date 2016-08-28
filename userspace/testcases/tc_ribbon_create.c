@@ -1,25 +1,25 @@
 /// Author: Terry Hsu
-/// Test case for creating ribbons
+/// Test case for creating smvs
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <pthread.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 #define NUM_THREADS 10
-#define NUM_RIBBONS_PER_THREAD 5
+#define NUM_SMVS_PER_THREAD 5
 
-// Thread stack for creating ribbons
+// Thread stack for creating smvs
 void *fn(void *args){
     int i = 0;
-    int ribbon_id[NUM_RIBBONS_PER_THREAD];
-    for (i = 0; i < NUM_RIBBONS_PER_THREAD; i++) {
-        ribbon_id[i] = ribbon_create();
+    int smv_id[NUM_SMVS_PER_THREAD];
+    for (i = 0; i < NUM_SMVS_PER_THREAD; i++) {
+        smv_id[i] = smv_create();
     }
-    for (i = 0; i < NUM_RIBBONS_PER_THREAD; i++) {
-        if (ribbon_id[i] != -1) {
-            ribbon_kill(ribbon_id[i]);
+    for (i = 0; i < NUM_SMVS_PER_THREAD; i++) {
+        if (smv_id[i] != -1) {
+            smv_kill(smv_id[i]);
         }
     }
     printf("Hi i is in %d!\n", memdom_query_id(&i));
@@ -28,23 +28,23 @@ void *fn(void *args){
 
 int main(){
     int i = 0;
-    int ribbon_id[NUM_RIBBONS_PER_THREAD];
+    int smv_id[NUM_SMVS_PER_THREAD];
     pthread_t tid[NUM_THREADS];
 
-    ribbon_main_init(1);
+    smv_main_init(1);
 
     for (i = 0; i < NUM_THREADS; i++) {
         fprintf(stderr, "creating %d thread\n", i);
         pthread_create(&tid[i], NULL, fn, NULL);
     }
 
-    // main thread create ribbons
-    for (i = 0; i < NUM_RIBBONS_PER_THREAD; i++) {
-        ribbon_id[i] = ribbon_create();
+    // main thread create smvs
+    for (i = 0; i < NUM_SMVS_PER_THREAD; i++) {
+        smv_id[i] = smv_create();
     }
-    for (i = 0; i < NUM_RIBBONS_PER_THREAD; i++) {
-        if (ribbon_id[i] != -1) {
-            ribbon_kill(ribbon_id[i]);
+    for (i = 0; i < NUM_SMVS_PER_THREAD; i++) {
+        if (smv_id[i] != -1) {
+            smv_kill(smv_id[i]);
         }
     }
 
@@ -53,8 +53,8 @@ int main(){
         pthread_join(tid[i], NULL);
     }
 
-    // Try delete a non-existing ribbon/memdom
-    ribbon_kill(12345);
+    // Try delete a non-existing smv/memdom
+    smv_kill(12345);
     memdom_kill(1025);
 
     printf("main memdom id: %d\n", memdom_main_id());

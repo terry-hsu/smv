@@ -1,12 +1,12 @@
 /// Author: Terry Hsu
-/// Test case for ribbon threads to access shared memory areas (heaps and globals)
-/// Each thread running in its own ribbon
+/// Test case for smv threads to access shared memory areas (heaps and globals)
+/// Each thread running in its own smv
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 #include <pthread.h>
 #define NUM_THREADS 10
@@ -17,18 +17,18 @@ int *dint;
 int block_write;
 pthread_mutex_t mlock;
 
-// Thread stack for creating ribbons
+// Thread stack for creating smvs
 // Each thread write to 1 page
 void *fn(void *args){
     int *t = (int*)args;
-    fprintf(stderr, "ribbon %d read global_int: %d\n", *t, global_int);
+    fprintf(stderr, "smv %d read global_int: %d\n", *t, global_int);
     pthread_mutex_lock(&mlock);
     global_int++;   
-    printf("ribbon %d wrote global_int: %d\n", *t, global_int);
+    printf("smv %d wrote global_int: %d\n", *t, global_int);
 
-    printf("ribbon %d read *dint: %d\n", *t, *dint);
+    printf("smv %d read *dint: %d\n", *t, *dint);
     *dint = global_int + 1;   
-    printf("ribbon %d wrote *dint: %d\n", *t, *dint);
+    printf("smv %d wrote *dint: %d\n", *t, *dint);
     pthread_mutex_unlock(&mlock);
     return NULL;
 }
@@ -36,13 +36,13 @@ void *fn(void *args){
 int main(){
     int i = 0;
     int rv = 0;
-    int ribbon_id[NUM_THREADS];
+    int smv_id[NUM_THREADS];
     pthread_t tid[NUM_THREADS];
     int *t[NUM_THREADS];
     global_int = 0;
-    block_write = 5; // don't allow this ribbon to write to global
+    block_write = 5; // don't allow this smv to write to global
 
-    ribbon_main_init(1);
+    smv_main_init(1);
     
     pthread_mutex_init(&mlock, NULL);
 
@@ -50,22 +50,22 @@ int main(){
     dint = (int*)malloc(sizeof(int));
     *dint = 123;
 
-    // main thread create ribbons
+    // main thread create smvs
     for (i = 0; i < NUM_THREADS; i++) {
-        ribbon_id[i] = ribbon_create();
+        smv_id[i] = smv_create();
 
         // Join local memdom
-        ribbon_join_domain(memdom_id, ribbon_id[i]);    
+        smv_join_domain(memdom_id, smv_id[i]);    
         // Set privileges to local memdom
-        memdom_priv_add(memdom_id, ribbon_id[i], MEMDOM_READ | MEMDOM_WRITE);
+        memdom_priv_add(memdom_id, smv_id[i], MEMDOM_READ | MEMDOM_WRITE);
 
         // Join global memdom
-        ribbon_join_domain(0, ribbon_id[i]);
+        smv_join_domain(0, smv_id[i]);
         // Set privileges to global memdom
         if (block_write == i) {        
-            memdom_priv_add(0, ribbon_id[i], MEMDOM_READ);
+            memdom_priv_add(0, smv_id[i], MEMDOM_READ);
         } else{
-            memdom_priv_add(0, ribbon_id[i], MEMDOM_READ  | MEMDOM_WRITE);
+            memdom_priv_add(0, smv_id[i], MEMDOM_READ  | MEMDOM_WRITE);
         }
     }
 
@@ -73,7 +73,7 @@ int main(){
     for (i = 0; i < NUM_THREADS; i++) {
         t[i] = malloc(sizeof(int));
         *t[i] = i;
-        rv = smvthread_create(ribbon_id[i], &tid[i], fn, t[i]);
+        rv = smvthread_create(smv_id[i], &tid[i], fn, t[i]);
         if (rv == -1) {
             printf("smvthread_create error\n");
         }
@@ -86,8 +86,8 @@ int main(){
     }
 
     for (i = 0; i < NUM_THREADS; i++) {
-        if (ribbon_id[i] != -1) {
-            ribbon_kill(ribbon_id[i]);
+        if (smv_id[i] != -1) {
+            smv_kill(smv_id[i]);
         }
     }
 
@@ -95,6 +95,6 @@ int main(){
     *dint = global_int + 1 ;
     printf("Final global_int: %d\n", global_int);
     printf("Final dint: %d\n", *dint);
-    printf("ribbon 123 exists? %d\n", ribbon_exists(123));
+    printf("smv 123 exists? %d\n", smv_exists(123));
     return 0;
 }

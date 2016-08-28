@@ -1,12 +1,12 @@
 /// Author: Terry Hsu
-/// Test case for ribbon threads to allocate memory domain protected regions heaps
-/// Each thread running in its own ribbon
+/// Test case for smv threads to allocate memory domain protected regions heaps
+/// Each thread running in its own smv
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #include <memdom_lib.h>
 #include <pthread.h>
 #define NUM_THREADS 1
@@ -18,18 +18,18 @@ int *heap_int[NUM_THREADS];
 int block_write;
 pthread_mutex_t mlock;
 
-// Thread stack for creating ribbons
+// Thread stack for creating smvs
 // Each thread write to 1 page
 void *fn(void *args){
     int *t = (int*)args;
-    fprintf(stderr, "ribbon %d read global_int: %d\n", *t, global_int);
+    fprintf(stderr, "smv %d read global_int: %d\n", *t, global_int);
     pthread_mutex_lock(&mlock);
     global_int++;   
-    printf("ribbon %d wrote global_int: %d\n", *t, global_int);
+    printf("smv %d wrote global_int: %d\n", *t, global_int);
 
-    printf("ribbon %d read *dint: %d\n", *t, *dint);
+    printf("smv %d read *dint: %d\n", *t, *dint);
     *dint = global_int + 1;   
-    printf("ribbon %d wrote *dint: %d\n", *t, *dint);
+    printf("smv %d wrote *dint: %d\n", *t, *dint);
 
     pthread_mutex_unlock(&mlock);
     return NULL;
@@ -39,12 +39,12 @@ int main(){
     int i = 0;
     int *memdom_int[1024];
 
-    ribbon_main_init(1);
+    smv_main_init(1);
     
     pthread_mutex_init(&mlock, NULL);
 
     int memdom_id = memdom_create();
-    ribbon_join_domain(memdom_id, 0);
+    smv_join_domain(memdom_id, 0);
     memdom_priv_add(memdom_id, 0, MEMDOM_READ | MEMDOM_WRITE);
 
     i = 0;
