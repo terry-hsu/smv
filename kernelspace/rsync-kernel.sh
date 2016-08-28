@@ -1,13 +1,13 @@
 #!/bin/bash
 SMV_DIR="../"
 KERNEL_DIR="$SMV_DIR/kernelspace/"
-if [ $# -eq 0 ]; then
-    echo "Please input remote destination."
+if [ $# -lt 2 ]; then
+    echo "./rsync-kernel.sh username remote"
     exit -1
 fi
 
-echo "=========== Copying modified kernel files from local to $1 ========="
-rsync -auv --rsh='ssh ' --no-times --exclude-from rsync_exclude  $KERNEL_DIR terry@$1:/home/terry/workspace/smv/kernelspace/
+echo "=========== Copying modified kernel files from local to $2 ========="
+rsync -auv --rsh='ssh ' --no-times --exclude-from rsync_exclude  $KERNEL_DIR $1@$2:/home/terry/workspace/smv/kernelspace/
 ret=$?
 if [ $ret -eq 0 ]; then
     echo "====================== Copied successfully ========================"
