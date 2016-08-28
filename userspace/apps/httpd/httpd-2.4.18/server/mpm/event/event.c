@@ -98,7 +98,7 @@
 
 #include <signal.h>
 #include <limits.h>             /* for INT_MAX */
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 /* Limit on the total --- clients will be locked out if more servers than
  * this are needed.  It is intended solely to keep the server from crashing
@@ -2239,7 +2239,7 @@ static void child_main(int child_num_arg, int child_bucket)
     apr_thread_t *start_thread_id;
     int i;
 
-    ribbon_main_init(1);
+    smv_main_init(1);
     mpm_state = AP_MPMQ_STARTING;       /* for benefit of any hooks that run as this
                                          * child initializes
                                          */

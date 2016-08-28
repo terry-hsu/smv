@@ -18,7 +18,7 @@
 #include "apr_portable.h"
 #include "apr_arch_threadproc.h"
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 #if APR_HAS_THREADS
 
 #if APR_HAVE_PTHREAD_H

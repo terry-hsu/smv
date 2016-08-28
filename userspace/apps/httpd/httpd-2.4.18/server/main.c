@@ -45,7 +45,7 @@
 #include <unistd.h>
 #endif
 
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 /* WARNING: Win32 binds http_main.c dynamically to the server. Please place
  *          extern functions and global data in another appropriate module.
  *

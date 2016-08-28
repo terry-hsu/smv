@@ -32,7 +32,7 @@
 #include "apr_poll.h"
 
 #include <stdlib.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 #define APR_WANT_STRFUNC
 #include "apr_want.h"
@@ -1232,7 +1232,7 @@ static void child_main(int child_num_arg, int child_bucket)
     apr_thread_t *start_thread_id;
     int i;
 
-    ribbon_main_init(1);
+    smv_main_init(1);
     mpm_state = AP_MPMQ_STARTING; /* for benefit of any hooks that run as this
                                    * child initializes
                                    */
