@@ -13,7 +13,7 @@
 #include <linux/sched.h>
 #include <linux/genetlink.h>
 #include "kernel_comm.h"
-#include "ribbon_lib.h"
+#include "smv_lib.h"
 
 #define GENLMSG_DATA(glh) ((void *)(NLMSG_DATA(glh) + GENL_HDRLEN))
 #define GENLMSG_PAYLOAD(glh) (NLMSG_PAYLOAD(glh, 0) - GENL_HDRLEN)

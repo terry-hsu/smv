@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include "ribbon_lib.h"
+#include "smv_lib.h"
 #include "kernel_comm.h"
 
 /* Permission */
@@ -90,17 +90,17 @@ void *memdom_alloc(int memdom_id, unsigned long nbytes);
 /* Deallocate npages pages in memory domain memdom */
 void memdom_free(void* data);
 
-/* Return privilege status of ribbon rib in memory domain memdom */
-unsigned long memdom_priv_get(int memdom_id, int ribbon_id);
+/* Return privilege status of smv rib in memory domain memdom */
+unsigned long memdom_priv_get(int memdom_id, int smv_id);
 
-/* Add privilege of ribbon rib in memory domain memdom */
-int memdom_priv_add(int memdom_id, int ribbon_id, unsigned long privs);
+/* Add privilege of smv rib in memory domain memdom */
+int memdom_priv_add(int memdom_id, int smv_id, unsigned long privs);
 
-/* Delete privilege of ribbon rib in memory domain memdom */
-int memdom_priv_del(int memdom_id, int ribbon_id, unsigned long privs);
+/* Delete privilege of smv rib in memory domain memdom */
+int memdom_priv_del(int memdom_id, int smv_id, unsigned long privs);
 
-/* Modify privilege of ribbon rib in memory domain memdom */
-int memdom_priv_mod(int memdom_id, int ribbon_id, unsigned long privs);
+/* Modify privilege of smv rib in memory domain memdom */
+int memdom_priv_mod(int memdom_id, int smv_id, unsigned long privs);
 
 /* Get the memdom id for global memory used by main thread */
 int memdom_main_id(void);

@@ -112,63 +112,63 @@ void *memdom_mmap(int memdom_id,
     return base;
 }
 
-/* Return privilege status of ribbon rib in memory domain memdom */
-unsigned long memdom_priv_get(int memdom_id, int ribbon_id){
+/* Return privilege status of smv rib in memory domain memdom */
+unsigned long memdom_priv_get(int memdom_id, int smv_id){
     int rv = 0;
     char buf[100];
-    sprintf(buf, "memdom,priv,%d,%d,get", memdom_id, ribbon_id);
+    sprintf(buf, "memdom,priv,%d,%d,get", memdom_id, smv_id);
     rv = message_to_kernel(buf);
     if( rv == -1 ){
         rlog("kernel responded error");
         return -1;
     }    
-    rlog("Ribbon %d in memdom %d has privilege: 0x%x\n", ribbon_id, memdom_id, rv);
+    rlog("smv %d in memdom %d has privilege: 0x%x\n", smv_id, memdom_id, rv);
     // ! should return privilege
     return rv;
 }
 
-/* Add privilege of ribbon rib in memory domain memdom */
-int memdom_priv_add(int memdom_id, int ribbon_id, unsigned long privs){
+/* Add privilege of smv rib in memory domain memdom */
+int memdom_priv_add(int memdom_id, int smv_id, unsigned long privs){
     int rv = 0;
     char buf[100];
-    sprintf(buf, "memdom,priv,%d,%d,add,%lu", memdom_id, ribbon_id, privs);
+    sprintf(buf, "memdom,priv,%d,%d,add,%lu", memdom_id, smv_id, privs);
     rv = message_to_kernel(buf);
     if( rv == -1 ){
         rlog("kernel responded error");
         return -1;
     }    
-    rlog("Ribbon %d in memdom %d has (after added)privilege: 0x%x\n", ribbon_id, memdom_id, rv);
+    rlog("smv %d in memdom %d has (after added)privilege: 0x%x\n", smv_id, memdom_id, rv);
     // ! should return privilege
     return rv;
 }
 
-/* Delete privilege of ribbon rib in memory domain memdom */
-int memdom_priv_del(int memdom_id, int ribbon_id, unsigned long privs){
+/* Delete privilege of smv rib in memory domain memdom */
+int memdom_priv_del(int memdom_id, int smv_id, unsigned long privs){
     int rv = 0;
     char buf[100];
-    sprintf(buf, "memdom,priv,%d,%d,del,%lu", memdom_id, ribbon_id, privs);
+    sprintf(buf, "memdom,priv,%d,%d,del,%lu", memdom_id, smv_id, privs);
     rv = message_to_kernel(buf);
     if( rv == -1 ){
         rlog("kernel responded error");
         return -1;
     }    
-    rlog("Ribbon %d in memdom %d has (after deleted)privilege: 0x%x\n", ribbon_id, memdom_id, rv);    
+    rlog("smv %d in memdom %d has (after deleted)privilege: 0x%x\n", smv_id, memdom_id, rv);    
     // ! should return privilege
     return rv;
     
 }
 
-/* Modify privilege of ribbon rib in memory domain memdom */
-int memdom_priv_mod(int memdom_id, int ribbon_id, unsigned long privs){
+/* Modify privilege of smv rib in memory domain memdom */
+int memdom_priv_mod(int memdom_id, int smv_id, unsigned long privs){
     int rv = 0;
     char buf[100];
-    sprintf(buf, "memdom,priv,%d,%d,mod,%lu", memdom_id, ribbon_id, privs);
+    sprintf(buf, "memdom,priv,%d,%d,mod,%lu", memdom_id, smv_id, privs);
     rv = message_to_kernel(buf);
     if( rv == -1 ){
         rlog("kernel responded error");
         return -1;
     }    
-    rlog("Ribbon %d in memdom %d has (after modified)privilege: %d\n", ribbon_id, memdom_id, rv);    
+    rlog("smv %d in memdom %d has (after modified)privilege: %d\n", smv_id, memdom_id, rv);    
     // ! should return privilege
     return rv;
 }

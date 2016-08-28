@@ -34,28 +34,28 @@ extern "C" {
 #endif
 
 /* Telling the kernel that this process will be using the secure memory view model */
-int ribbon_main_init(int);
+int smv_main_init(int);
 
-/* Create a ribbon and return the ID of the newly created ribbon */
-int ribbon_create(void);
+/* Create a smv and return the ID of the newly created smv */
+int smv_create(void);
 
-/* Destroy a ribbon */
-int ribbon_kill(int ribbon_id);
+/* Destroy a smv */
+int smv_kill(int smv_id);
 
-/* Add ribbon to memory domain */
-int ribbon_join_domain(int memdom_id, int ribbon_id);
+/* Add smv to memory domain */
+int smv_join_domain(int memdom_id, int smv_id);
 
-/* Remove ribbon from memory domain */
-int ribbon_leave_domain(int memdom_id, int ribbon_id);
+/* Remove smv from memory domain */
+int smv_leave_domain(int memdom_id, int smv_id);
 
-/* Check if ribbon is in memory domain, return 1 if true, 0 otherwise */
-int ribbon_is_in_domain(int memdom_id, int ribbon_id);
+/* Check if smv is in memory domain, return 1 if true, 0 otherwise */
+int smv_is_in_domain(int memdom_id, int smv_id);
 
-/* Create an smv thread running in a ribbon */
-int smvthread_create(int ribbon_id, pthread_t *tid, void *(fn)(void*), void *args);
+/* Create an smv thread running in a smv */
+int smvthread_create(int smv_id, pthread_t *tid, void *(fn)(void*), void *args);
 
-/* Check whether a ribbon exists */
-int ribbon_exists(int ribbon_id);
+/* Check whether a smv exists */
+int smv_exists(int smv_id);
 #ifdef __cplusplus
 }
 #endif
