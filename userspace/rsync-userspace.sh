@@ -1,13 +1,13 @@
 #!/bin/bash
 SMV_DIR="$(PWD)/../"
 USERSPACE_DIR="$SMV_DIR/userspace/"
-if [ $# -eq 0 ]; then
-echo "Please input remote destination."
+if [ $# -lt 3 ]; then
+echo "./rsync_userspace.sh username url dest"
 exit -1
 fi
 
-echo "=========== Copying modified files from local to $1 ========="
-rsync -auv --rsh='ssh ' --no-times --exclude-from rsync_exclude  $USERSPACE_DIR terry@$1:/home/terry/workspace/smv/userspace/
+echo "=========== Copying modified files from local to $2 ========="
+rsync -auv --rsh='ssh ' --no-times --exclude-from rsync_exclude  $USERSPACE_DIR $1@$2:$3
 ret=$?
 if [ $ret -eq 0 ]; then
 echo "====================== Copied successfully ========================"
