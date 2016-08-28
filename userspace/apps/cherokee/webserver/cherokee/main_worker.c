@@ -27,7 +27,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <ribbon_lib.h>
+#include <smv_lib.h>
 
 #include "init.h"
 #include "server.h"
@@ -360,7 +360,7 @@ main (int argc, char **argv)
 {
 	ret_t ret;
 
-	ribbon_main_init(1);
+	smv_main_init(1);
 	config_file = strdup (DEFAULT_CONFIG_FILE);
 	if (config_file == NULL) {
 		PRINT_MSG ("ERROR: Couldn't allocate memory.\n");
