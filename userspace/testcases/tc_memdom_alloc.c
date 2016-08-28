@@ -67,5 +67,6 @@ int main(){
     memdom_free(memdom_int[i]);
     printf("\n");
 
+    memdom_kill(memdom_id);
     return 0;
 }
