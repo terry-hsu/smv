@@ -40,7 +40,7 @@ cd ..
 
 # Compile netlink module
 NETLINK_DIR=./netlink-module/
-echo "===================== [x64-kernel] Compile netlink module for ribbons. ============================"
+echo "===================== [x64-kernel] Compile netlink module for smv. ============================"
 cd $NETLINK_DIR
 make
 cd ..

@@ -36,7 +36,7 @@ To use SMVs, you need to compile SMV kernel, SMV LKM, and SMV API.
         % cd $SMV/userspace/
         % ./install_api.sh
 Then, include the following header in your source code:
-    #include <ribbon_lib.h>
+    #include <smv_lib.h>
 Finally, compile your program by linking the smv library:
     g++ target.c -o target -lsmv_lib
 
