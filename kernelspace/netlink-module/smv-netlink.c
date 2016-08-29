@@ -2,7 +2,7 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/string.h>
-#include <linux/ribbon.h>
+#include <linux/smv.h>
 #include <linux/memdom.h>
 #include <linux/sched.h>
 
@@ -46,7 +46,7 @@ enum {
 #define DOC_EXMPL_C_MAX (__DOC_EXMPL_C_MAX - 1)
 
 int memdom_internal_function_dispatcher(int memdom_op, long memdom_id1,
-                                         long memdom_reqsize, unsigned long malloc_start, char* memdom_data, long ribbon_id,
+                                         long memdom_reqsize, unsigned long malloc_start, char* memdom_data, long smv_id,
                                          long memdom_priv_op, long memdom_priv_value){
     int rc = 0;
 //  unsigned long memdom_data_addr = 0;
@@ -73,45 +73,45 @@ int memdom_internal_function_dispatcher(int memdom_op, long memdom_id1,
     }
     else if(memdom_op == 4){      
         if(memdom_priv_op == 0){            
-            printk(KERN_CRIT "[%s] memdom_priv_get(%ld, %ld)\n", __func__, memdom_id1, ribbon_id);
-            rc = memdom_priv_get(memdom_id1, ribbon_id);            
+            printk(KERN_CRIT "[%s] memdom_priv_get(%ld, %ld)\n", __func__, memdom_id1, smv_id);
+            rc = memdom_priv_get(memdom_id1, smv_id);            
         }        
         else if(memdom_priv_op == 1){            
-            printk(KERN_CRIT "[%s] memdom_priv_add(%ld, %ld, %ld)\n", __func__, memdom_id1, ribbon_id, memdom_priv_value);
-            rc = memdom_priv_add(memdom_id1, ribbon_id, memdom_priv_value);            
+            printk(KERN_CRIT "[%s] memdom_priv_add(%ld, %ld, %ld)\n", __func__, memdom_id1, smv_id, memdom_priv_value);
+            rc = memdom_priv_add(memdom_id1, smv_id, memdom_priv_value);            
         }        
         else if(memdom_priv_op == 2){            
-            printk(KERN_CRIT "[%s] memdom_priv_del(%ld, %ld, %ld)\n", __func__, memdom_id1, ribbon_id, memdom_priv_value);
-            rc = memdom_priv_del(memdom_id1, ribbon_id, memdom_priv_value);            
+            printk(KERN_CRIT "[%s] memdom_priv_del(%ld, %ld, %ld)\n", __func__, memdom_id1, smv_id, memdom_priv_value);
+            rc = memdom_priv_del(memdom_id1, smv_id, memdom_priv_value);            
         }        
     }
 
     return rc;
 }
 
-int ribbon_internal_function_dispatcher(int ribbon_op, long ribbon_id, int ribbon_domain_op,
+int smv_internal_function_dispatcher(int smv_op, long smv_id, int smv_domain_op,
                                           long memdom_id1, long memdom_id2){
     
     int rc = 0;
 
-    if(ribbon_op == 0){
-        printk( "[%s] ribbon_create()\n", __func__);
-        rc = ribbon_create();
-    }else if(ribbon_op == 1){
-        printk( "[%s] ribbon_kill(%ld)\n", __func__, ribbon_id);
-        rc = ribbon_kill(ribbon_id, NULL);
-    }else if(ribbon_op == 2){
-        printk( "[%s] ribbon_run(%ld)\n", __func__, ribbon_id);
-    }else if(ribbon_op == 3){
-        if(ribbon_domain_op == 0){
-            printk( "[%s] ribbon_join_domain(%ld, %ld)\n", __func__, memdom_id1, ribbon_id);
-            rc = ribbon_join_memdom(memdom_id1, ribbon_id);
-        }else if(ribbon_domain_op == 1){
-            printk( "[%s] ribbon_leave_domain(%ld, %ld)\n", __func__, ribbon_id, memdom_id1);
-            rc = ribbon_leave_memdom(memdom_id1, ribbon_id, NULL);
-        }else if(ribbon_domain_op == 2){
-            printk("[%s] ribbon_is_in_domain(%ld, %ld)\n", __func__, memdom_id1, ribbon_id);
-            rc = ribbon_is_in_memdom(memdom_id1, ribbon_id);
+    if(smv_op == 0){
+        printk( "[%s] smv_create()\n", __func__);
+        rc = smv_create();
+    }else if(smv_op == 1){
+        printk( "[%s] smv_kill(%ld)\n", __func__, smv_id);
+        rc = smv_kill(smv_id, NULL);
+    }else if(smv_op == 2){
+        printk( "[%s] smv_run(%ld)\n", __func__, smv_id);
+    }else if(smv_op == 3){
+        if(smv_domain_op == 0){
+            printk( "[%s] smv_join_domain(%ld, %ld)\n", __func__, memdom_id1, smv_id);
+            rc = smv_join_memdom(memdom_id1, smv_id);
+        }else if(smv_domain_op == 1){
+            printk( "[%s] smv_leave_domain(%ld, %ld)\n", __func__, smv_id, memdom_id1);
+            rc = smv_leave_memdom(memdom_id1, smv_id, NULL);
+        }else if(smv_domain_op == 2){
+            printk("[%s] smv_is_in_domain(%ld, %ld)\n", __func__, memdom_id1, smv_id);
+            rc = smv_is_in_memdom(memdom_id1, smv_id);
         }
     }
     return rc;
@@ -120,7 +120,7 @@ int ribbon_internal_function_dispatcher(int ribbon_op, long ribbon_id, int ribbo
 int parse_message(char* message){
     char **buf;
     char *token;
-    int message_type = -1;      /* message type: 0: memdom, 1: ribbon, -1: undefined */
+    int message_type = -1;      /* message type: 0: memdom, 1: smv, -1: undefined */
     int memdom_op = -1;         /* 0: create, 1: kill, 2: mmap, 3: unmap, 4: priv, -1: undefined */
     long memdom_priv_op = -1;    /* 0: get, 1: add, 2: del, 3: mod, -1: undefined */
     long memdom_priv_value = -1;
@@ -130,9 +130,9 @@ int parse_message(char* message){
     void *memdom_data = NULL;
     unsigned long malloc_start = 0;
 
-    int ribbon_op = -1;         /* 0: create, 1: kill, 2: run, 3: domain related, -1: undefined */
-    int ribbon_domain_op = -1;    /* 0: join, 1: leave, 2: isin, 3: switch, -1: undefined */
-    long ribbon_id = -1;
+    int smv_op = -1;         /* 0: create, 1: kill, 2: run, 3: domain related, -1: undefined */
+    int smv_domain_op = -1;    /* 0: join, 1: leave, 2: isin, 3: switch, -1: undefined */
+    long smv_id = -1;
 
     int i = 0;
 
@@ -152,7 +152,7 @@ int parse_message(char* message){
         if(message_type == -1){
             if( (strcmp(token, "memdom")) == 0)
                 message_type = 0;
-            else if( (strcmp(token, "ribbon")) == 0)
+            else if( (strcmp(token, "smv")) == 0)
                 message_type = 1;
             else if( (strcmp(token, "gdb_breakpoint")) == 0){
                 message_type = 9;
@@ -192,30 +192,30 @@ int parse_message(char* message){
             }
             continue;
         }
-        else if( message_type == 1 && ribbon_op == -1){ // ribbon
-            printk(KERN_CRIT "ribbon token 2 (op): %s\n", token);
+        else if( message_type == 1 && smv_op == -1){ // smv
+            printk(KERN_CRIT "smv token 2 (op): %s\n", token);
             if( (strcmp(token, "create")) == 0 )
-                ribbon_op = 0;
+                smv_op = 0;
             else if( (strcmp(token, "kill")) == 0 )
-                ribbon_op = 1;
+                smv_op = 1;
             else if( (strcmp(token, "run")) == 0 )
-                ribbon_op = 2;
+                smv_op = 2;
             else if( (strcmp(token, "domain")) == 0 )
-                ribbon_op = 3;
+                smv_op = 3;
             else if ((strcmp(token, "exists")) == 0 ) 
-                ribbon_op = 4; // print all vma a ribbon holds
+                smv_op = 4; // print all vma a smv holds
             else if ((strcmp(token, "registerthread")) == 0 ) 
-                ribbon_op = 5;
+                smv_op = 5;
             else if ((strcmp(token, "printpgtable")) == 0) 
-                ribbon_op = 6; //get ribbon id            
+                smv_op = 6; //get smv id            
             else if ((strcmp(token, "finalize")) == 0) 
-                ribbon_op = 7; //finalize ribbon environment            
+                smv_op = 7; //finalize smv environment            
             else if ((strcmp(token, "maininit")) == 0 ) 
-                ribbon_op = 9;
-            else if ((strcmp(token, "getribbonid")) == 0) 
-                ribbon_op = 10; //get ribbon id
+                smv_op = 9;
+            else if ((strcmp(token, "getsmvid")) == 0) 
+                smv_op = 10; //get smv id
             else {
-                printk(KERN_CRIT "Error: received undefined ribbon ops: %s\n", token);
+                printk(KERN_CRIT "Error: received undefined smv ops: %s\n", token);
                 return -1;
             }
             continue;
@@ -241,10 +241,10 @@ int parse_message(char* message){
             return memdom_query_id(address);
         }
         
-        // ribbon: get ribbon id
-        else if( message_type == 1 && (ribbon_op >= 1 || ribbon_op <= 6) && ribbon_id == -1){
-            printk(KERN_CRIT "memdom token 3 (ribbon_id): %s\n", token);
-            if( kstrtol(token, 10, &ribbon_id) ){
+        // smv: get smv id
+        else if( message_type == 1 && (smv_op >= 1 || smv_op <= 6) && smv_id == -1){
+            printk(KERN_CRIT "memdom token 3 (smv_id): %s\n", token);
+            if( kstrtol(token, 10, &smv_id) ){
                 return -1;
             }
             continue;
@@ -252,7 +252,7 @@ int parse_message(char* message){
         
         /* token 4*/
         // memdom
-        if( message_type == 0 && (memdom_nbytes == -1 && memdom_data == NULL && ribbon_id == -1)){
+        if( message_type == 0 && (memdom_nbytes == -1 && memdom_data == NULL && smv_id == -1)){
             printk(KERN_CRIT "memdom token 4: %s\n", token);
 
             // memdom allocate, get nbytes
@@ -265,25 +265,25 @@ int parse_message(char* message){
             else if( memdom_op == 3){
 //              memdom_data = token;
             }
-            // memdom priv, get ribbonID
+            // memdom priv, get smvID
             if( memdom_op == 4){
-                if( kstrtol(token, 10, &ribbon_id) )
+                if( kstrtol(token, 10, &smv_id) )
                     return -1;
             }
             continue;
         }
-        // ribbon gets memory domain op
-        else if( message_type == 1 && ribbon_op == 3 && ribbon_domain_op == -1){
+        // smv gets memory domain op
+        else if( message_type == 1 && smv_op == 3 && smv_domain_op == -1){
             if( (strcmp(token, "join")) == 0)
-                ribbon_domain_op = 0;
+                smv_domain_op = 0;
             else if( (strcmp(token, "leave")) == 0)
-                ribbon_domain_op = 1;
+                smv_domain_op = 1;
             else if( (strcmp(token, "isin")) == 0)
-                ribbon_domain_op = 2;
+                smv_domain_op = 2;
             else if( (strcmp(token, "switch")) == 0)
-                ribbon_domain_op = 3;
+                smv_domain_op = 3;
             else {
-                printk(KERN_CRIT "Error: received undefined ribbon domain ops: %s\n", token);
+                printk(KERN_CRIT "Error: received undefined smv domain ops: %s\n", token);
                 return -1;
             }
             continue;
@@ -321,9 +321,9 @@ int parse_message(char* message){
             }
 
         }
-            // ribbon gets memory domain id
-        else if(message_type == 1 && ribbon_op == 3 && memdom_id1 == -1){
-            printk(KERN_CRIT "ribbon gets memdom_id1: %s\n", token);
+            // smv gets memory domain id
+        else if(message_type == 1 && smv_op == 3 && memdom_id1 == -1){
+            printk(KERN_CRIT "smv gets memdom_id1: %s\n", token);
             if( kstrtol(token, 10, &memdom_id1) )
                 return -1;
             continue;
@@ -332,7 +332,7 @@ int parse_message(char* message){
         
         /* token 6*/
         // memdom gets memdom privilege value 
-        if( message_type == 0 && ribbon_id != -1 && memdom_priv_op != -1 && memdom_priv_value == -1){
+        if( message_type == 0 && smv_id != -1 && memdom_priv_op != -1 && memdom_priv_value == -1){
             printk(KERN_CRIT "memdom token 6 (memdom_priv_value): %s\n", token);
 
             if( kstrtol(token, 10, &memdom_priv_value) ){
@@ -341,9 +341,9 @@ int parse_message(char* message){
             }
             continue;
         }
-        // ribbon gets 2nd memory domain id
+        // smv gets 2nd memory domain id
         else if( message_type == 1 && memdom_id1 != -1 && memdom_id2 == -1){
-            printk(KERN_CRIT "ribbon gets memdom_id2: %s\n", token);
+            printk(KERN_CRIT "smv gets memdom_id2: %s\n", token);
             if( kstrtol(token, 10, &memdom_id2) )
                 return -1;
             continue;
@@ -357,39 +357,39 @@ int parse_message(char* message){
         }
         else{
             return memdom_internal_function_dispatcher(memdom_op, memdom_id1, 
-                                                memdom_nbytes, malloc_start, memdom_data, ribbon_id,
+                                                memdom_nbytes, malloc_start, memdom_data, smv_id,
                                                 memdom_priv_op, memdom_priv_value);
         }
     }
     else if(message_type == 1){
 
-        if (ribbon_op == 10) {
-            /* User queries ribbon ID the current thread is running in */
-            return ribbon_get_ribbon_id();
+        if (smv_op == 10) {
+            /* User queries smv ID the current thread is running in */
+            return smv_get_smv_id();
         }
-        else if (ribbon_op == 9) {
-            ribbon_main_init();
+        else if (smv_op == 9) {
+            smv_main_init();
             return 0;
         }
-        else if (ribbon_op == 7) {
-//          ribbon_finalize();
+        else if (smv_op == 7) {
+//          smv_finalize();
         } 
-        else if (ribbon_op == 4) {
-            /* Check whether a ribbon exists */
-            return ribbon_exists(ribbon_id);
+        else if (smv_op == 4) {
+            /* Check whether a smv exists */
+            return smv_exists(smv_id);
         } 
-        else if (ribbon_op == 5) {
-            printk(KERN_INFO "[%s] register ribbon thread running in ribbon %ld\n", __func__, ribbon_id);
-            register_ribbon_thread(ribbon_id);
+        else if (smv_op == 5) {
+            printk(KERN_INFO "[%s] register smv thread running in smv %ld\n", __func__, smv_id);
+            register_smv_thread(smv_id);
             return 0;
         } 
-        else if (ribbon_op == 6) {
-//          ribbon_print_pgtables(ribbon_id);
+        else if (smv_op == 6) {
+//          smv_print_pgtables(smv_id);
             return 0;
         } 
         else {
-            /* Other ribbon operations */
-            return ribbon_internal_function_dispatcher(ribbon_op, ribbon_id, ribbon_domain_op, 
+            /* Other smv operations */
+            return smv_internal_function_dispatcher(smv_op, smv_id, smv_domain_op, 
                                                  memdom_id1, memdom_id2);
         }
 
@@ -426,7 +426,7 @@ int doc_exmpl_echo(struct sk_buff *skb_2,  struct genl_info *info)
     if (na) {
 		mydata = (char *)nla_data(na);
 		if (mydata == NULL)
-			printk(KERN_ERR "[ribbon_netlink.c] error while receiving data\n");
+			printk(KERN_ERR "[smv_netlink.c] error while receiving data\n");
     }
 	else
 		printk(KERN_CRIT "no info->attrs %i\n", DOC_EXMPL_A_MSG);
@@ -487,7 +487,7 @@ static const struct genl_ops doc_exmpl_gnl_ops_echo[] = {
 static int __init kernel_comm_init(void)
 {
 	int rc;
-    printk(KERN_INFO "[Ribbon] KERNEL COMMUNICATION MODULE READY\n");
+    printk(KERN_INFO "[smv] KERNEL COMMUNICATION MODULE READY\n");
 
     /*register new family*/
     rc = genl_register_family_with_ops(&doc_exmpl_gnl_family, doc_exmpl_gnl_ops_echo);
@@ -499,14 +499,14 @@ static int __init kernel_comm_init(void)
 	return 0;
 	
 failure:
-    printk(KERN_CRIT "[Ribbon] an error occured while inserting the netlink module\n");
+    printk(KERN_CRIT "[smv] error occured while inserting the netlink module\n");
 	return -1;	
 }
 
 static void __exit kernel_comm_exit(void)
 {
     int ret;
-    printk(KERN_INFO "[Ribbon] KERNEL COMMUNICATION MODULE EXIT\n");
+    printk(KERN_INFO "[smv] KERNEL COMMUNICATION MODULE EXIT\n");
 
     /*unregister the family*/
 	ret = genl_unregister_family(&doc_exmpl_gnl_family);
