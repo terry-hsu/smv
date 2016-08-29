@@ -74,7 +74,7 @@
 #include <linux/binfmts.h>
 #include <linux/context_tracking.h>
 #include <linux/compiler.h>
-#include <linux/ribbon.h>
+#include <linux/smv.h>
 
 #include <asm/switch_to.h>
 #include <asm/tlb.h>
@@ -2680,8 +2680,8 @@ context_switch(struct rq *rq, struct task_struct *prev,
 	 */
 	arch_start_context_switch(prev);
 
-	/* Check if we need to context switch from one ribbon to another */
-	switch_ribbon(prev, next, oldmm, mm);	
+	/* Check if we need to context switch from one smv to another */
+	switch_smv(prev, next, oldmm, mm);	
 
 	if (!mm) {
 		next->active_mm = oldmm;

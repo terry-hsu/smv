@@ -91,7 +91,7 @@ struct mmu_gather_batch {
  */
 struct mmu_gather {
 	struct mm_struct	*mm;
-    int ribbon_id;
+    int smv_id;
 #ifdef CONFIG_HAVE_RCU_TABLE_FREE
 	struct mmu_table_batch	*batch;
 #endif

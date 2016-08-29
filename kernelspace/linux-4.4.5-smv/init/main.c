@@ -88,7 +88,7 @@
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
 
-#include <linux/ribbon.h>
+#include <linux/smv.h>
 #include <linux/memdom.h>
 
 static int kernel_init(void *);
@@ -561,9 +561,9 @@ asmlinkage __visible void __init start_kernel(void)
 	trap_init();
 	mm_init();
 
-    /* Initialize ribbons and memory domains for the secure memory views model */
-    init_task.ribbon_id = -1;
-	ribbon_init();
+    /* Initialize smvs and memory domains for the secure memory views model */
+    init_task.smv_id = -1;
+	smv_init();
     memdom_init();
 
 	/*

@@ -144,8 +144,8 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		 * ordering guarantee we need.
 		 *
 		 */
-		if (next->using_smv && tsk->ribbon_id != MAIN_THREAD) {
-			load_cr3(next->pgd_ribbon[tsk->ribbon_id]);
+		if (next->using_smv && tsk->smv_id != MAIN_THREAD) {
+			load_cr3(next->pgd_smv[tsk->smv_id]);
 		} else {
 			load_cr3(next->pgd);
 		}
@@ -180,7 +180,7 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		this_cpu_write(cpu_tlbstate.state, TLBSTATE_OK);
 		BUG_ON(this_cpu_read(cpu_tlbstate.active_mm) != next);
 
-		/* Context switch for ribbon threads even if mm is the same one (for new pgtables) */
+		/* Context switch for smv threads even if mm is the same one (for new pgtables) */
 		if (!cpumask_test_cpu(cpu, mm_cpumask(next)) ||
 			(next->using_smv) ) {
 			/*
@@ -199,8 +199,8 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
 			 * As above, load_cr3() is serializing and orders TLB
 			 * fills with respect to the mm_cpumask write.
 			 */
-			if (next->using_smv && tsk->ribbon_id != MAIN_THREAD) {
-				load_cr3(next->pgd_ribbon[tsk->ribbon_id]);
+			if (next->using_smv && tsk->smv_id != MAIN_THREAD) {
+				load_cr3(next->pgd_smv[tsk->smv_id]);
 			} else {
 				load_cr3(next->pgd);
 			}

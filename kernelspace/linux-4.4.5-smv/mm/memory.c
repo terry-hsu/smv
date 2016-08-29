@@ -70,7 +70,7 @@
 #include <asm/tlbflush.h>
 #include <asm/pgtable.h>
 
-#include <linux/ribbon.h>
+#include <linux/smv.h>
 #include <linux/memdom.h>
 #include <linux/smv_mm.h>
 
@@ -221,7 +221,7 @@ static bool tlb_next_batch(struct mmu_gather *tlb)
 void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, unsigned long start, unsigned long end)
 {
 	tlb->mm = mm;
-	tlb->ribbon_id = current->ribbon_id;
+	tlb->smv_id = current->smv_id;
 	/* Is it from 0 to ~0? */
 	tlb->fullmm     = !(start | (end+1));
 	tlb->need_flush_all = 0;
@@ -521,10 +521,10 @@ void free_pgd_range(struct mmu_gather *tlb,
 	if (addr > end - 1)
 		return;
 
-	/* Use the ribbon id recorded in tlb to free pgtables */
+	/* Use the smv id recorded in tlb to free pgtables */
 	if (tlb->mm->using_smv) {
 		mutex_lock(&tlb->mm->smv_metadataMutex);
-		pgd = tlb->mm->pgd_ribbon[tlb->ribbon_id] + pgd_index(addr);
+		pgd = tlb->mm->pgd_smv[tlb->smv_id] + pgd_index(addr);
 		mutex_unlock(&tlb->mm->smv_metadataMutex);
 	} else{
 		pgd = pgd_offset(tlb->mm, addr);	
@@ -1272,7 +1272,7 @@ static void unmap_page_range(struct mmu_gather *tlb,
 	tlb_start_vma(tlb, vma);
 	if ( tlb->mm->using_smv ) {		
 		mutex_lock(&tlb->mm->smv_metadataMutex);
-		pgd = tlb->mm->pgd_ribbon[tlb->ribbon_id] + pgd_index(addr);
+		pgd = tlb->mm->pgd_smv[tlb->smv_id] + pgd_index(addr);
 		mutex_unlock(&tlb->mm->smv_metadataMutex);
 	} else{
 		pgd = pgd_offset(vma->vm_mm, addr);
@@ -1378,9 +1378,9 @@ void zap_page_range(struct vm_area_struct *vma, unsigned long start,
 
 	lru_add_drain();
 	tlb_gather_mmu(&tlb, mm, start, end);
-	/* Update ribbon_id in tlb if the caller is madvise_dontneed() */
+	/* Update smv_id in tlb if the caller is madvise_dontneed() */
 	if (details) {
-		tlb.ribbon_id = details->ribbon_id;
+		tlb.smv_id = details->smv_id;
 	}
 	update_hiwater_rss(mm);
 	mmu_notifier_invalidate_range_start(mm, start, end);
@@ -3397,10 +3397,10 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 		return hugetlb_fault(mm, vma, address, flags);
 
 	/* Ribbon threads should use main thread's pgd to record fault 
-	 * Pthreads (ribbon_id == -1) should still use pgd_offset 
+	 * Pthreads (smv_id == -1) should still use pgd_offset 
 	 */
-	if (mm->using_smv && current->ribbon_id >= MAIN_THREAD) {
-		pgd = pgd_offset_ribbon(mm, address, MAIN_THREAD);
+	if (mm->using_smv && current->smv_id >= MAIN_THREAD) {
+		pgd = pgd_offset_smv(mm, address, MAIN_THREAD);
 	} else {
 		pgd = pgd_offset(mm, address);
 	}
@@ -3496,27 +3496,27 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
 
 out:
 	/* Ribbon threads should copy the pgtables from the main thread
-	 * Pthreads (ribbon_id == -1) should still use pgd_offset 
+	 * Pthreads (smv_id == -1) should still use pgd_offset 
 	 */
-	if (mm->using_smv && current->ribbon_id >= MAIN_THREAD) {
-		/* Only copy page table to current ribbon if handle_pte_fault succeeds. 
+	if (mm->using_smv && current->smv_id >= MAIN_THREAD) {
+		/* Only copy page table to current smv if handle_pte_fault succeeds. 
 		 * MAIN_THREAD will return immediately as it doesn't have to copy its own pgtables. */
 		if (rv == 0) {
 			/* FIXME: just pass pte to copy_pgtable_smv? */
-			copy_pgtable_smv(current->ribbon_id, MAIN_THREAD, address, flags, vma);
+			copy_pgtable_smv(current->smv_id, MAIN_THREAD, address, flags, vma);
 		}
 		if (rv == 0) {
 			slog(KERN_INFO "[%s] addr 0x%16lx done\n", __func__, address);
 		} else{
 			slog(KERN_INFO "[%s] addr 0x%16lx failed\n", __func__, address);
 		}
-		if ( current->ribbon_id == MAIN_THREAD) {
-			slog(KERN_INFO "[%s] ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
-					__func__, current->ribbon_id, pgd_val(*pgd), pud_val(*pud), pmd_val(*pmd), pte_val(*pte));
+		if ( current->smv_id == MAIN_THREAD) {
+			slog(KERN_INFO "[%s] smv %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
+					__func__, current->smv_id, pgd_val(*pgd), pud_val(*pud), pmd_val(*pmd), pte_val(*pte));
 		}
-		slog(KERN_INFO "[%s] cr3: 0x%16lx, ribbon %d: mm->pgd: %p, mm->pgd_ribbon[%d]: %p, mm->pgd_ribbon[MAIN_THREAD]: %p\n", 
-				__func__, read_cr3(), current->ribbon_id, mm->pgd, current->ribbon_id, 
-				mm->pgd_ribbon[current->ribbon_id], mm->pgd_ribbon[MAIN_THREAD]);
+		slog(KERN_INFO "[%s] cr3: 0x%16lx, smv %d: mm->pgd: %p, mm->pgd_smv[%d]: %p, mm->pgd_smv[MAIN_THREAD]: %p\n", 
+				__func__, read_cr3(), current->smv_id, mm->pgd, current->smv_id, 
+				mm->pgd_smv[current->smv_id], mm->pgd_smv[MAIN_THREAD]);
 
 	}
 	return rv;

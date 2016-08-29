@@ -7,7 +7,7 @@
 /* Check whether current fault is a valid smv page fault.
  * Return 1 if it's a valid smv fault, 0 to block access 
  */
-int smv_valid_fault(int ribbon_id, struct vm_area_struct *vma, unsigned long error_code){
+int smv_valid_fault(int smv_id, struct vm_area_struct *vma, unsigned long error_code){
     int memdom_id = vma->memdom_id;
     struct mm_struct *mm = current->mm;
     int privs = 0;
@@ -15,20 +15,20 @@ int smv_valid_fault(int ribbon_id, struct vm_area_struct *vma, unsigned long err
 
     /* Skip checking for smv valid fault if 
      * 1. current task is not using smv 
-     * 2. current task is using smv, but page fault triggered by Pthreads (ribbon_id == -1) 
+     * 2. current task is using smv, but page fault triggered by Pthreads (smv_id == -1) 
      */
-    if ( !mm->using_smv || (mm->using_smv && current->ribbon_id == -1) ) {
+    if ( !mm->using_smv || (mm->using_smv && current->smv_id == -1) ) {
          return 1;
     }
 
-    /* A fault is valid only if the ribbon has joined this vma's memdom */
-    if ( !ribbon_is_in_memdom(memdom_id, ribbon_id) ) {
-        printk(KERN_ERR "[%s] ribbon %d is not in memdom %d\n", __func__, ribbon_id, memdom_id);
+    /* A fault is valid only if the smv has joined this vma's memdom */
+    if ( !smv_is_in_memdom(memdom_id, smv_id) ) {
+        printk(KERN_ERR "[%s] smv %d is not in memdom %d\n", __func__, smv_id, memdom_id);
         return 0;
     }
 
-    /* Get this ribbon's privileges */
-    privs = memdom_priv_get(memdom_id, ribbon_id);
+    /* Get this smv's privileges */
+    privs = memdom_priv_get(memdom_id, smv_id);
 
     /* Protection fault */
     if ( error_code & PF_PROT ) {        
@@ -39,7 +39,7 @@ int smv_valid_fault(int ribbon_id, struct vm_area_struct *vma, unsigned long err
         if ( privs & MEMDOM_WRITE ) {
             rv = 1;
         } else{
-            printk(KERN_ERR "[%s] ribbon %d cannot write memdom %d\n", __func__, ribbon_id, memdom_id);
+            printk(KERN_ERR "[%s] smv %d cannot write memdom %d\n", __func__, smv_id, memdom_id);
             rv = 0; // Try to write a unwrittable address
         }
         
@@ -49,7 +49,7 @@ int smv_valid_fault(int ribbon_id, struct vm_area_struct *vma, unsigned long err
         if ( privs & MEMDOM_READ ) {
             rv = 1;
         } else{
-            printk(KERN_ERR "[%s] ribbon %d cannot read memdom %d\n", __func__, ribbon_id, memdom_id);
+            printk(KERN_ERR "[%s] smv %d cannot read memdom %d\n", __func__, smv_id, memdom_id);
             rv = 0; // Try to read a unreadable address
         }
     }
@@ -86,10 +86,10 @@ static inline void add_mm_rss_vec(struct mm_struct *mm, int *rss) {
 			add_mm_counter(mm, i, rss[i]);
 }
 
-/* Copy pte of a fault address from src_ribbon to dst_ribbon 
+/* Copy pte of a fault address from src_smv to dst_smv 
  * Return 0 on success, -1 otherwise.
  */
-int copy_pgtable_smv(int dst_ribbon, int src_ribbon, 
+int copy_pgtable_smv(int dst_smv, int src_smv, 
                      unsigned long address, unsigned int flags,
                      struct vm_area_struct *vma){
     
@@ -104,18 +104,18 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
     int rss[NR_MM_COUNTERS];
 
     /* Don't copy page table to the main thread */
-    if ( dst_ribbon == MAIN_THREAD ) {
-        slog(KERN_INFO "[%s] ribbon %d attempts to overwrite main thread's page table. Skip\n", __func__, src_ribbon);
+    if ( dst_smv == MAIN_THREAD ) {
+        slog(KERN_INFO "[%s] smv %d attempts to overwrite main thread's page table. Skip\n", __func__, src_smv);
         return 0;
     }
-    /* Source and destination ribbons cannot be the same */
-    if ( dst_ribbon == src_ribbon ) {
-        slog(KERN_INFO "[%s] ribbon %d attempts to copy its own page table. Skip.\n", __func__, src_ribbon);
+    /* Source and destination smvs cannot be the same */
+    if ( dst_smv == src_smv ) {
+        slog(KERN_INFO "[%s] smv %d attempts to copy its own page table. Skip.\n", __func__, src_smv);
         return 0;
     }
     /* Main thread should not call this function */
-    if ( current->ribbon_id == MAIN_THREAD ) {
-        slog(KERN_INFO "[%s] main thread ribbon %d, skip\n", __func__, current->ribbon_id);
+    if ( current->smv_id == MAIN_THREAD ) {
+        slog(KERN_INFO "[%s] main thread smv %d, skip\n", __func__, current->smv_id);
         return 0;
     }
 
@@ -123,21 +123,21 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
     /* SMP protection */
     mutex_lock(&mm->smv_metadataMutex);
 
-    /* Source ribbon:
+    /* Source smv:
      * Page walk to obtain the source pte 
      * We should hit each level as __handle_mm_fault has already handled the fault
      */
-    src_pgd = pgd_offset_ribbon(mm, address, src_ribbon);
+    src_pgd = pgd_offset_smv(mm, address, src_smv);
     src_pud = pud_offset(src_pgd, address);
     src_pmd = pmd_offset(src_pud, address);
     src_pte = pte_offset_map(src_pmd, address);
     src_ptl = pte_lockptr(mm, src_pmd);
     spin_lock(src_ptl);
 
-    /* Destination ribbon: 
+    /* Destination smv: 
      * Page walk to obtain the destination pte. 
      * Allocate new entry as needed */
-    dst_pgd = pgd_offset_ribbon(mm, address, dst_ribbon);
+    dst_pgd = pgd_offset_smv(mm, address, dst_smv);
     dst_pud = pud_alloc(mm, dst_pgd, address);
     if ( !dst_pud ) {
         rv = VM_FAULT_OOM;
@@ -176,18 +176,18 @@ int copy_pgtable_smv(int dst_ribbon, int src_ribbon,
             }
     	    add_mm_rss_vec(mm, rss);
         }
-        slog(KERN_INFO "[%s] src_pte 0x%16lx(ribbon %d) != dst_pte 0x%16lx (ribbon %d) for addr 0x%16lx\n", __func__, pte_val(*src_pte), src_ribbon, pte_val(*dst_pte), dst_ribbon, address);
+        slog(KERN_INFO "[%s] src_pte 0x%16lx(smv %d) != dst_pte 0x%16lx (smv %d) for addr 0x%16lx\n", __func__, pte_val(*src_pte), src_smv, pte_val(*dst_pte), dst_smv, address);
     } else{
-        slog(KERN_INFO "[%s] src_pte (ribbon %d) == dst_pte (ribbon %d) for addr 0x%16lx\n", __func__, src_ribbon, dst_ribbon, address);
+        slog(KERN_INFO "[%s] src_pte (smv %d) == dst_pte (smv %d) for addr 0x%16lx\n", __func__, src_smv, dst_smv, address);
     }
 
     /* Set the actual value to be the same as the source pgtables for destination  */   
     set_pte_at(mm, address, dst_pte, *src_pte);
 
-    slog(KERN_INFO "[%s] src ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
-                __func__, src_ribbon, pgd_val(*src_pgd), pud_val(*src_pud), pmd_val(*src_pmd), pte_val(*src_pte));
-    slog(KERN_INFO "[%s] dst ribbon %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
-                __func__, dst_ribbon, pgd_val(*dst_pgd), pud_val(*dst_pud), pmd_val(*dst_pmd), pte_val(*dst_pte));
+    slog(KERN_INFO "[%s] src smv %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
+                __func__, src_smv, pgd_val(*src_pgd), pud_val(*src_pud), pmd_val(*src_pmd), pte_val(*src_pte));
+    slog(KERN_INFO "[%s] dst smv %d: pgd_val:0x%16lx, pud_val:0x%16lx, pmd_val:0x%16lx, pte_val:0x%16lx\n", 
+                __func__, dst_smv, pgd_val(*dst_pgd), pud_val(*dst_pud), pmd_val(*dst_pmd), pte_val(*dst_pte));
   
     spin_unlock(dst_ptl);
     pte_unmap(dst_pte);    
@@ -202,8 +202,8 @@ unlock_src:
     if ( rv != 0 ) {
         slog(KERN_ERR "[%s] Error: !dst_pud, address 0x%16lx\n", __func__, address);
     } else{
-        slog(KERN_INFO "[%s] ribbon %d copied pte from MAIN_THREAD. addr 0x%16lx, *src_pte 0x%16lx, *dst_pte 0x%16lx\n", 
-               __func__, dst_ribbon, address, pte_val(*src_pte), pte_val(*dst_pte));
+        slog(KERN_INFO "[%s] smv %d copied pte from MAIN_THREAD. addr 0x%16lx, *src_pte 0x%16lx, *dst_pte 0x%16lx\n", 
+               __func__, dst_smv, address, pte_val(*src_pte), pte_val(*dst_pte));
     }
 	mutex_unlock(&mm->smv_metadataMutex);
     return rv;

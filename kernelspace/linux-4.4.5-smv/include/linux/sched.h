@@ -1377,7 +1377,7 @@ struct tlbflush_unmap_batch {
 };
 
 struct task_struct {
-    int ribbon_id;  /* current task running in this ribbon */
+    int smv_id;  /* current task running in this smv */
     int mmap_memdom_id; /* recording what memdom this task is trying to allocate memory in. Used by memdom_alloc() */
 	volatile long state;	/* -1 unrunnable, 0 runnable, >0 stopped */
 	void *stack;

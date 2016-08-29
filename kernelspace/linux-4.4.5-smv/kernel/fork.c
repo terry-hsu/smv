@@ -88,7 +88,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/task.h>
 
-#include <linux/ribbon.h>
+#include <linux/smv.h>
 #include <linux/memdom.h>
 
 /*
@@ -590,16 +590,16 @@ static void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
 
 static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
 {
-    atomic_set(&mm->num_ribbons, 0);
+    atomic_set(&mm->num_smvs, 0);
 	atomic_set(&mm->num_memdoms, 0);	  
-    bitmap_zero(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE); /* No ribbon is allocated yet */
+    bitmap_zero(mm->smv_bitmapInUse, SMV_ARRAY_SIZE); /* No smv is allocated yet */
     bitmap_zero(mm->memdom_bitmapInUse, SMV_ARRAY_SIZE); /* No memdom is allocated yet */
-    mutex_init(&mm->smv_metadataMutex);    /* Initialize mutex that protects ribbon */    
-	memset(mm->ribbon_metadata, 0, sizeof(struct ribbon_struct*) * SMV_ARRAY_SIZE);	/* If the first element is NULL, then no ribbon is created yet */
+    mutex_init(&mm->smv_metadataMutex);    /* Initialize mutex that protects smv */    
+	memset(mm->smv_metadata, 0, sizeof(struct smv_struct*) * SMV_ARRAY_SIZE);	/* If the first element is NULL, then no smv is created yet */
 	memset(mm->memdom_metadata, 0, sizeof(struct memdom_struct*) * SMV_ARRAY_SIZE); /* If the first element is NULL, then no memdom is created yet */
-	memset(mm->pgd_ribbon, 0, sizeof(pgd_t) * SMV_ARRAY_SIZE);	
+	memset(mm->pgd_smv, 0, sizeof(pgd_t) * SMV_ARRAY_SIZE);	
 	mm->using_smv = 0;
-	mm->standby_ribbon_id = -1;
+	mm->standby_smv_id = -1;
 
 	mm->mmap = NULL;
 	mm->mm_rb = RB_ROOT;
@@ -652,7 +652,7 @@ static void check_mm(struct mm_struct *mm)
 {
 	int i;
 	if (mm->using_smv) {
-		slog(KERN_INFO "[%s] %s ribbon %d checking mm %p\n", __func__, current->comm, current->ribbon_id, mm);
+		slog(KERN_INFO "[%s] %s smv %d checking mm %p\n", __func__, current->comm, current->smv_id, mm);
 	}
 
 	for (i = 0; i < NR_MM_COUNTERS; i++) {
@@ -698,7 +698,7 @@ struct mm_struct *mm_alloc(void)
 void __mmdrop(struct mm_struct *mm)
 {
 	if (mm->using_smv) {
-		slog(KERN_INFO "[%s] %s in ribbon %d mm: %p\n", __func__, current->comm, current->ribbon_id, mm);
+		slog(KERN_INFO "[%s] %s in smv %d mm: %p\n", __func__, current->comm, current->smv_id, mm);
 	}
 	BUG_ON(mm == &init_mm);
 	mm_free_pgd(mm);
@@ -1436,11 +1436,11 @@ static struct task_struct *copy_process(unsigned long clone_flags,
 	p->sequential_io_avg	= 0;
 #endif
 
-	/* Get ribbon_id if any stored in mm */
+	/* Get smv_id if any stored in mm */
 	if (current->mm) {
-		p->ribbon_id = current->mm->standby_ribbon_id; // Could be -1 if it's not ribbon thread
+		p->smv_id = current->mm->standby_smv_id; // Could be -1 if it's not smv thread
 	} else {
-		p->ribbon_id = -1;
+		p->smv_id = -1;
 	}
 	/* Initialize mmap_memdom_id to -1 */
 	p->mmap_memdom_id = -1;
@@ -1788,14 +1788,14 @@ long _do_fork(unsigned long clone_flags,
 		nr = PTR_ERR(p);
 	}
 
-	/* Reset ribbon_id for ribbon_thread_create and assign ribbon_id to the child task p
-	 * User space guarantees the atomic operation of forking ribbon threads 
+	/* Reset smv_id for smv_thread_create and assign smv_id to the child task p
+	 * User space guarantees the atomic operation of forking smv threads 
 	 */
 	if (current->mm) {
-		if ( current->mm->standby_ribbon_id != -1 ) {
-			slog(KERN_INFO "[%s] forked ribbon thread running in ribbon %d\n", __func__, current->mm->standby_ribbon_id);
-  			p->ribbon_id = current->mm->standby_ribbon_id;
-			current->mm->standby_ribbon_id = -1;
+		if ( current->mm->standby_smv_id != -1 ) {
+			slog(KERN_INFO "[%s] forked smv thread running in smv %d\n", __func__, current->mm->standby_smv_id);
+  			p->smv_id = current->mm->standby_smv_id;
+			current->mm->standby_smv_id = -1;
 		}
 	}
 

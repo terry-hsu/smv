@@ -38,10 +38,10 @@
 struct memdom_struct {
     int memdom_id;    
     struct mutex memdom_mutex;
-    DECLARE_BITMAP(ribbon_bitmapRead, SMV_ARRAY_SIZE); // Bitmap of ribbon.  Set to 1 if ribbon[i] can read this memdom, 0 otherwise.
-    DECLARE_BITMAP(ribbon_bitmapWrite, SMV_ARRAY_SIZE); // Bitmap of ribbon.  Set to 1 if ribbon[i] can write this memdom, 0 otherwise.
-    DECLARE_BITMAP(ribbon_bitmapExecute, SMV_ARRAY_SIZE); // Bitmap of ribbon.  Set to 1 if ribbon[i] can execute data in this memdom, 0 otherwise.
-    DECLARE_BITMAP(ribbon_bitmapAllocate, SMV_ARRAY_SIZE); // Bitmap of ribbon.  Set to 1 if ribbon[i] can allocate data in this memdom, 0 otherwise.
+    DECLARE_BITMAP(smv_bitmapRead, SMV_ARRAY_SIZE); // Bitmap of smv.  Set to 1 if smv[i] can read this memdom, 0 otherwise.
+    DECLARE_BITMAP(smv_bitmapWrite, SMV_ARRAY_SIZE); // Bitmap of smv.  Set to 1 if smv[i] can write this memdom, 0 otherwise.
+    DECLARE_BITMAP(smv_bitmapExecute, SMV_ARRAY_SIZE); // Bitmap of smv.  Set to 1 if smv[i] can execute data in this memdom, 0 otherwise.
+    DECLARE_BITMAP(smv_bitmapAllocate, SMV_ARRAY_SIZE); // Bitmap of smv.  Set to 1 if smv[i] can allocate data in this memdom, 0 otherwise.
 };
 
 /// --- Functions called by the kernel internally to manage memory space --- ///
@@ -54,9 +54,9 @@ int memdom_claim_all_vmas(int memdom_id);
 int memdom_create(void);
 void free_all_memdoms(struct mm_struct *mm);
 int memdom_kill(int memdom_id, struct mm_struct *mm);
-int memdom_priv_add(int memdom_id, int ribbon_id, int privs);
-int memdom_priv_del(int memdom_id, int ribbon_id, int privs);
-int memdom_priv_get(int memdom_id, int ribbon_id);
+int memdom_priv_add(int memdom_id, int smv_id, int privs);
+int memdom_priv_del(int memdom_id, int smv_id, int privs);
+int memdom_priv_get(int memdom_id, int smv_id);
 int memdom_mmap_register(int memdom_id);
 unsigned long memdom_munmap(unsigned long addr);
 int memdom_main_id(void);

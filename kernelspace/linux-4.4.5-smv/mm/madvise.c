@@ -288,15 +288,15 @@ static long madvise_dontneed(struct vm_area_struct *vma,
 
 	if ( mm->using_smv ) {	
 		memset(&zap, 0, sizeof(struct zap_details));
-		zap.ribbon_id = -1;
-		/* Call zap_page_range for all ribbons */
+		zap.smv_id = -1;
+		/* Call zap_page_range for all smvs */
 		do {
-			zap.ribbon_id = find_next_bit(mm->ribbon_bitmapInUse, SMV_ARRAY_SIZE, (zap.ribbon_id+1));
-			if (zap.ribbon_id != SMV_ARRAY_SIZE) {
-				slog(KERN_INFO "[%s] ribbon %d [0x%16lx to 0x%16lx]\n", __func__, zap.ribbon_id, start, end);
+			zap.smv_id = find_next_bit(mm->smv_bitmapInUse, SMV_ARRAY_SIZE, (zap.smv_id+1));
+			if (zap.smv_id != SMV_ARRAY_SIZE) {
+				slog(KERN_INFO "[%s] smv %d [0x%16lx to 0x%16lx]\n", __func__, zap.smv_id, start, end);
 				zap_page_range(vma, start, end - start, &zap);
 			}
-		} while (zap.ribbon_id != SMV_ARRAY_SIZE);
+		} while (zap.smv_id != SMV_ARRAY_SIZE);
 	} else {
 		zap_page_range(vma, start, end - start, NULL);
 	}

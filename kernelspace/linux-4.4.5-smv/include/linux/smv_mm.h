@@ -19,12 +19,12 @@
 */
 
 /*
- *  @file       ribbon.h
+ *  @file       smv.h
  *  @brief      Management of secure memory view metadata.
  *  @author     Terry Ching-Hsiang Hsu  <terryhsu@purdue.edu> 
 */
 
-#define SMV_ARRAY_SIZE 1025 /* Maximum number of ribbons and memdoms allowed in a process */
+#define SMV_ARRAY_SIZE 1025 /* Maximum number of smvs and memdoms allowed in a process */
 #define MAIN_THREAD 0 /* Main thread is always using the first index in the metadata array: 0 */
 #define LAST_RIBBON_INDEX (SMV_ARRAY_SIZE - 1)
 #define LAST_MEMDOM_INDEX (SMV_ARRAY_SIZE - 1)
@@ -51,10 +51,10 @@ enum x86_pf_error_code {
 };
 
 /* Called by copy_pte_smv to locate the current pgd */
-#define pgd_offset_ribbon(mm, address, ribbon_id) ((mm)->pgd_ribbon[ribbon_id]  + pgd_index((address)))
+#define pgd_offset_smv(mm, address, smv_id) ((mm)->pgd_smv[smv_id]  + pgd_index((address)))
 
-int smv_valid_fault(int ribbon_id, struct vm_area_struct *vma, unsigned long error_code);
-int copy_pgtable_smv(int dst_ribbon, int src_ribbon, 
+int smv_valid_fault(int smv_id, struct vm_area_struct *vma, unsigned long error_code);
+int copy_pgtable_smv(int dst_smv, int src_smv, 
                      unsigned long addr, unsigned int flags,
                      struct vm_area_struct *vma);
 #endif
