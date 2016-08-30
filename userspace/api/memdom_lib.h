@@ -112,6 +112,7 @@ int memdom_query_id(void *obj);
 int memdom_private_id(void);
 
 #ifdef __cplusplus
+}
 #endif
 
 #endif
