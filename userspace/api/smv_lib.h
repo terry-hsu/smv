@@ -22,7 +22,8 @@
 //#define THREAD_PRIVATE_STACK
 #define NEW_SMV -1
 
-#define INTERCEPT_PTHREAD_CREATE
+// Note: DONT intercept pthread for Firefox
+//#define INTERCEPT_PTHREAD_CREATE
 #ifdef INTERCEPT_PTHREAD_CREATE
 #define pthread_create(tid, attr, fn, args) smvthread_create(NEW_SMV, tid, fn, args)
 #endif
@@ -56,6 +57,7 @@ int smvthread_create(int smv_id, pthread_t *tid, void *(fn)(void*), void *args);
 
 /* Check whether a smv exists */
 int smv_exists(int smv_id);
+
 #ifdef __cplusplus
 }
 #endif
