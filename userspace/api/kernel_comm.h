@@ -1,6 +1,9 @@
 #ifndef KERNEL_COMM_H
 #define KERNEL_COMM_H
 
+#include <stdlib.h>
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
