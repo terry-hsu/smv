@@ -1,0 +1,11 @@
+### Building Mozilla Firefox with SMV ###
+cd $SMV/userspace/apps/firefox/firefox-45.0
+./mach build
+
+### Running Fifrefox (x86) ###
+cd $SMV/userspace/apps/firefox/firefox-45.0
+./obj-x86_64-unknown-linux-gnu/dist/bin/firefox
+
+### Cleaning build ###
+cd $SMV/userspace/apps/firefox/firefox-45.0
+./mach clobber
