@@ -17,6 +17,8 @@
 #include <unistd.h>
 #endif
 
+#include <smv_lib.h>
+
 #ifdef XP_MACOSX
 #include "MacQuirks.h"
 #endif
@@ -49,14 +51,13 @@
 #include "mozilla/Telemetry.h"
 #include "mozilla/WindowsDllBlocklist.h"
 
-#include <smv_lib.h>
-
 using namespace mozilla;
 
 #ifdef XP_MACOSX
 #define kOSXResourcesFolder "Resources"
 #endif
 #define kDesktopFolder "browser"
+
 
 static void Output(const char *fmt, ... )
 {

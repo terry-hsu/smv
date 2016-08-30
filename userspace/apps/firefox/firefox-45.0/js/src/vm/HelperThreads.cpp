@@ -24,9 +24,6 @@
 #include "jsobjinlines.h"
 #include "jsscriptinlines.h"
 
-#include <smv_lib.h>
-#include <memdom_lib.h>
-
 using namespace js;
 
 using mozilla::ArrayLength;
