@@ -1,1 +1,11 @@
+### Building security-enhanced Cherokee web server with SMVs ###
+cd $SMV/userspace/apps/cherokee
+mkdir build
+cd $SMV/userspace/apps/cherokee/webserver
 ./autogen.sh --prefix=/home/terry/workspace/smv/userspace/apps/cherokee/build/ LIBS=-lsmv_lib
+make
+make install
+
+### Running Cherokee ###
+cd $SMV/userspace/apps/cherokee/build/sbin
+./cherokee-worker
