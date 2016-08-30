@@ -41,7 +41,7 @@ Finally, compile your program by linking the smv library:
     g++ target.c -o target -lsmv_lib
 
 ### Citing SMVs ###       
-To cite SMVs, please cite our reearch paper published at CCS'16, included as doc/smv-ccs16.pdf.
+If you use SMVs, please cite our reearch paper published at CCS'16, included as doc/smv-ccs16.pdf.
 
 @InProceedings{smv,
     author    = {Hsu, Terry Ching-Hsiang and Hoffman, Kevin and Eugster, Patrick and Payer, Mathias},
