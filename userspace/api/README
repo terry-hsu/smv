@@ -1,4 +1,0 @@
-To install the smv userspace API:
-	
-Run install_lib.sh to install userspace library to the physical machine and the Qemu disk image
-
