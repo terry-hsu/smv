@@ -1,0 +1,3 @@
+To install SMV kernel and LKM:
+
+Simply run x64_install_native.sh (are you root?).
