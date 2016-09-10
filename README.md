@@ -31,7 +31,7 @@ SMVs provide strong threads compartmentalization through kernel-level page table
 - docs/: CCS'16 research paper describing the smv model design rationale. 
 
 ### Using SMVs ###
-- SMVs requires users to run the SMV Linux kernel to invoke userspace API. SMVs have been tested on x86 platform.
+- SMVs have been tested on x86 platform.
 - To use SMVs, you need to compile SMV kernel, SMV LKM, and SMV API.
     - To build SMV kernel (based on Linux kernel 4.4.5) and SMV LKM (loadable kernel module):
         - ``` % cd $SMV/kernelspace/ ```
