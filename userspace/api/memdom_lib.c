@@ -316,7 +316,7 @@ void *memdom_alloc(int memdom_id, unsigned long sz){
     /* Round up size to multiple of cache line size: 64B 
      * Note that the size of should block_header + the actual data
      * --------------------------------------
-     * | block header|      your data       |
+     * | block header |      your data       |
      * --------------------------------------
      */
     sz = round_up ( sz + sizeof(struct block_header_struct), CHUNK_SIZE);
