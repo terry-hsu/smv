@@ -18,17 +18,17 @@ SMVs provide strong threads compartmentalization through kernel-level page table
 ### Source tree structure ###
 - kernelspace/: things run in kernel space      
     - linux-4.4.5-smv/: core of the modified Linux kernel suppor for the SMV model.       
-    - netlink-module/: communication channel for user space programs
-- userspace/: things run in user space         
-    - api/: user space smv library
-    - apps/: real-world applications use cases
-        -firefox/firefox-45.0-smv/: security-enhanced firefox desktop web browser
-        -httpd/httpd-2.4.18/: security-enhanced Apache httpd web server
-        -cherokee/: security-enhanced Cherokee web server        
-    - benchmarks/: 
-        - parsec-3.0/: multithreaded C/C++ benchmarks for complex thread/memory interaction.
-    - testcases/: simple test cases for the smv model; used in early development stage.        
-- docs/: CCS'16 research paper describing the smv model design rationale.
+    - netlink-module/: communication channel for user space programs 
+- userspace/: things run in user space          
+    - api/: user space smv library 
+    - apps/: real-world applications use cases 
+        - firefox/firefox-45.0-smv/: security-enhanced firefox desktop web browser 
+        - httpd/httpd-2.4.18/: security-enhanced Apache httpd web server 
+        - cherokee/: security-enhanced Cherokee web server         
+    - benchmarks/:  
+        - parsec-3.0/: multithreaded C/C++ benchmarks for complex thread/memory interaction. 
+    - testcases/: simple test cases for the smv model; used in early development stage.         
+- docs/: CCS'16 research paper describing the smv model design rationale. 
 
 ### Using SMVs ###
 - SMVs requires users to run the SMV Linux kernel to invoke userspace API. SMVs have been tested on x86 platform.
